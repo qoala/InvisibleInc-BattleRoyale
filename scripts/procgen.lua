@@ -49,7 +49,7 @@ end
 function procgen.generateLevel( params )
 	local result = oldGenerateLevel( params )
 
-	if true then
+	if params.difficultyOptions.backstab_enabled  then
 		local cxt = {
 			rooms = result.rooms
 		}

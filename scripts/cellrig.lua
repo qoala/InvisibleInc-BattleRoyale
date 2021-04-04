@@ -24,16 +24,16 @@ end
 -- Custom Local functions
 
 local function backstabOffset(sim, cell)
-	room = cell.procgenRoom
-	simRoom = sim._mutableRooms[ room.roomIndex ]
-	currentIndex = 4
-	if not room or or not currentIndex or not simRoom.backstabIndex then
+	local room = cell.procgenRoom
+	local simRoom = sim._mutableRooms[ room.roomIndex ]
+	local latest = sim._backstabLatestZone
+	if not room or not latest or not simRoom.backstabZone then
 		return 0
-	elseif simRoom.backstabIndex <= currentIndex then
+	elseif simRoom.backstabZone <= latest then
 		return 4
-	elseif simRoom.backstabIndex == currentIndex + 1 then
+	elseif simRoom.backstabZone == latest + 1 then
 		return 8
-	elseif simRoom.backstabIndex == currentIndex + 2 then
+	elseif simRoom.backstabZone == latest + 2 then
 		return 12
 	end
 	return 0
@@ -44,7 +44,8 @@ end
 -- Override cellrig:refresh(). Changes at -- BACKSTAB
 local oldRefresh = cellrig.refresh
 function cellrig:refresh()
-	if false then
+	-- BACKSTAB: Check enabled.
+	if not self._game.simCore:getParams().difficultyOptions.backstab_enabled  then
 		return oldRefresh(self)
 	end
 
@@ -73,7 +74,7 @@ function cellrig:refresh()
 			local localPlayer = self._game:getLocalPlayer()
 			local isWatched = localPlayer and simquery.isCellWatched( self._game.simCore, localPlayer, self._x, self._y )
 
-			-- BACKSTAB: Tactical tileset is modified by backstab status of the cell
+			-- BACKSTAB: Tactical tileset is modified by backstab status of the cell.
 			local offset = backstabOffset( self._game.simCore, rawcell )
 			if isWatched == simdefs.CELL_WATCHED then
 				idx, flags = cdefs.WATCHED_CELL - offset, 0

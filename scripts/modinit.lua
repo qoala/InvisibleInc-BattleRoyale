@@ -37,6 +37,14 @@ local function load(modApi, options, params)
 
 	local patch_cdefs = include (scriptPath .. "/patch_cdefs")
 	patch_cdefs.patchLeveltiles()
+
+	if params then
+		params.backstab_enabled = true
+		params.backstab_roomsPerCycle = 2
+		params.backstab_finalRooms = 1
+		params.backstab_turnsPerCycle = 3
+		params.backstab_startTurn = 3
+	end
 end
 
 return {

@@ -10,25 +10,30 @@ oldInit = simengine.init
 function simengine:init( ... )
 	oldInit( self, ... )
 
-	if true and self._rooms then
-		local roomsPerCycle = 2;
-		local finalRooms = 1;
+	-- Assign each room to a backstabZone
+	local difficultyOptions = self:getParams().difficultyOptions
+	if difficultyOptions.backstab_enabled and self._rooms then
+		local roomsPerCycle = difficultyOptions.backstab_roomsPerCycle
+		local finalRooms = difficultyOptions.backstab_finalRooms
 
 		-- Make a shallow copy and sort by reverse distance from exit.
 		rooms = util.tdupe(self._rooms)
 		table.sort(rooms, function(a,b) return a.backstabExitDistance > b.backstabExitDistance end)
-		local backstabIndex = 1
+		local backstabZone = 1
 		local lastID = util.tcount(self._rooms) - finalRooms
 		for i, room in ipairs( rooms ) do
-			self._mutableRooms[room.roomIndex].backstabIndex = backstabIndex
-			simlog("DBGBACKSTAB %s: %s, %s", room.roomIndex, room.backstabExitDistance, backstabIndex)
+			self._mutableRooms[room.roomIndex].backstabZone = backstabZone
+			-- simlog("DBGBACKSTAB %s: %s, %s", room.roomIndex, room.backstabExitDistance, backstabZone)
 
 			if (i % roomsPerCycle) == 0 then
-				backstabIndex = backstabIndex + 1
+				backstabZone = backstabZone + 1
 			end
 			if i >= lastID then
 				break
 			end
 		end
+
+		-- TODO: calculate zone as turns pass
+		self._backstabLatestZone = 4
 	end
 end
