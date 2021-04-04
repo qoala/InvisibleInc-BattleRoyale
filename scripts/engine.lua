@@ -15,6 +15,7 @@ function simengine:init( ... )
 	if difficultyOptions.backstab_enabled and self._rooms then
 		local roomsPerCycle = difficultyOptions.backstab_roomsPerCycle
 		local finalRooms = difficultyOptions.backstab_finalRooms
+		local startTurn = difficultyOptions.backstab_startTurn
 
 		-- Make a shallow copy and sort by reverse distance from exit.
 		rooms = util.tdupe(self._rooms)
@@ -34,6 +35,10 @@ function simengine:init( ... )
 		end
 
 		self._backstab_maxZone = backstabZone
+
+		self._backstab_nextZoneTurn = startTurn
+		self:backstab_advanceZones()
+		self:getNPC():addMainframeAbility(self, "backstab_royaleFlush", 0)
 	end
 end
 
@@ -41,36 +46,39 @@ function simengine:backstab_nextZone()
 	return self._backstab_nextZone
 end
 
-function simengine:backstab_nextZoneTurn()
-	return self._backstab_nextZoneTurn
+function simengine:backstab_turnsUntilNextZone(turnOffset)
+	if self._backstab_nextZone and self._backstab_nextZone <= self._backstab_maxZone then
+		local turn = math.ceil( (self:getTurnCount() + 1 + (turnOffset or 0)) / 2)
+		return self._backstab_nextZoneTurn - turn
+	end
+	return nil
 end
 
 function updateRooms(sim, zone)
 	for _, simRoom in ipairs( sim._mutableRooms ) do
 		if simRoom.backstabZone == zone then
-			-- LOCKDOWN
+			-- RED
 			simRoom.backstabState = 0
 		elseif simRoom.backstabZone == zone + 1 then
-			-- IMMINENT
+			-- YELLOW
 			simRoom.backstabState = 1
 		elseif simRoom.backstabZone == zone + 2 then
-			-- WARNING
+			-- BLUE
 			simRoom.backstabState = 2
 		end
 	end
 end
 
-function simengine:backstab_onEndTurn()
+function simengine:backstab_advanceZones(turnOffset)
 	local difficultyOptions = self:getParams().difficultyOptions
 	local turnsPerCycle = difficultyOptions.backstab_turnsPerCycle
 	local startTurn = difficultyOptions.backstab_startTurn
 
-	-- Turn hasn't incremented yet.
-	local turn = math.ceil( (self:getTurnCount() + 2) / 2)
+	local turn = math.ceil( (self:getTurnCount() + 1 + (turnOffset or 0)) / 2)
 
 	if turn < startTurn or (self._backstab_nextZone and self._backstab_nextZone > self._backstab_maxZone) then
 		-- simlog("DBGBACKSTAB ADVANCE: %s start=%s", turn, startTurn)
-		return
+		return false
 	end
 
 	-- First zone is at 1. On startTurn, the next cycle is 0 with only warnings being marked into rooms.
@@ -78,7 +86,10 @@ function simengine:backstab_onEndTurn()
 	if nextZone ~= self._backstab_nextZone then
 		updateRooms(self, nextZone - 1)
 		self._backstab_nextZone = nextZone
-		self._backstab_nextZoneTurn = startTurn + nextZone * turnsPerCycle
+		self._backstab_nextZoneTurn = startTurn + (nextZone + 1) * turnsPerCycle
+
+		-- simlog("DBGBACKSTAB ADVANCE: %s next=%s", turn, self._backstab_nextZone)
+		return true
 	end
-	simlog("DBGBACKSTAB ADVANCE: %s next=%s", turn, self._backstab_nextZone)
+	return false
 end

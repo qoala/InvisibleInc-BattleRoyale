@@ -13,13 +13,17 @@ local function init(modApi)
 	local dataPath = modApi:getDataPath()
 	KLEIResourceMgr.MountPackage(dataPath .. "/images.kwad", "data")
 
-	include(scriptPath .. "/aiplayer")
 	include(scriptPath .. "/cellrig")
 	include(scriptPath .. "/engine")
 	include(scriptPath .. "/procgen")
 end
 
 local function initStrings(modApi)
+	local dataPath = modApi:getDataPath()
+	local scriptPath = modApi:getScriptPath()
+
+	local MOD_STRINGS = include( scriptPath .. "/strings" )
+	modApi:addStrings( dataPath, "BACKSTAB", MOD_STRINGS)
 end
 
 local function earlyUnload(modApi)
@@ -45,6 +49,11 @@ local function load(modApi, options, params)
 		params.backstab_finalRooms = 1
 		params.backstab_turnsPerCycle = 3
 		params.backstab_startTurn = 5
+	end
+
+	local npc_abilities = include( scriptPath .. "/npc_abilities" )
+	for name, ability in pairs(npc_abilities) do
+		modApi:addDaemonAbility( name, ability )
 	end
 end
 
