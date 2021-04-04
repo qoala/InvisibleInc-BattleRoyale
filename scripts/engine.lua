@@ -45,15 +45,15 @@ function simengine:backstab_nextZoneTurn()
 	return self._backstab_nextZoneTurn
 end
 
-function updateRooms(sim)
+function updateRooms(sim, zone)
 	for _, simRoom in ipairs( sim._mutableRooms ) do
-		if simRoom.backstabZone == sim._backstab_nextZone then
+		if simRoom.backstabZone == zone then
 			-- LOCKDOWN
 			simRoom.backstabState = 0
-		elseif simRoom.backstabZone == sim._backstab_nextZone + 1 then
+		elseif simRoom.backstabZone == zone + 1 then
 			-- IMMINENT
 			simRoom.backstabState = 1
-		elseif simRoom.backstabZone == sim._backstab_nextZone + 2 then
+		elseif simRoom.backstabZone == zone + 2 then
 			-- WARNING
 			simRoom.backstabState = 2
 		end
@@ -73,14 +73,12 @@ function simengine:backstab_onEndTurn()
 		return
 	end
 
-	if turn == startTurn then
-		-- First zone is at 1. This cycle and the next won't lock anything.
-		self._backstab_nextZone = -1
+	-- First zone is at 1. On startTurn, the next cycle is 0 with only warnings being marked into rooms.
+	local nextZone = math.floor((turn - startTurn) / turnsPerCycle)
+	if nextZone ~= self._backstab_nextZone then
+		updateRooms(self, nextZone - 1)
+		self._backstab_nextZone = nextZone
+		self._backstab_nextZoneTurn = startTurn + nextZone * turnsPerCycle
 	end
-	if (turn - startTurn) % turnsPerCycle == 0 then
-		updateRooms(self)
-		self._backstab_nextZone = self._backstab_nextZone + 1
-		self._backstab_nextZoneTurn = turn + turnsPerCycle
-	end
-	-- simlog("DBGBACKSTAB ADVANCE: %s next=%s", turn, self._backstab_nextZone)
+	simlog("DBGBACKSTAB ADVANCE: %s next=%s", turn, self._backstab_nextZone)
 end
