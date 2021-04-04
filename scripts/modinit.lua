@@ -13,6 +13,7 @@ local function init(modApi)
 	local dataPath = modApi:getDataPath()
 	KLEIResourceMgr.MountPackage(dataPath .. "/images.kwad", "data")
 
+	include(scriptPath .. "/aiplayer")
 	include(scriptPath .. "/cellrig")
 	include(scriptPath .. "/engine")
 	include(scriptPath .. "/procgen")
@@ -43,7 +44,7 @@ local function load(modApi, options, params)
 		params.backstab_roomsPerCycle = 2
 		params.backstab_finalRooms = 1
 		params.backstab_turnsPerCycle = 3
-		params.backstab_startTurn = 3
+		params.backstab_startTurn = 5
 	end
 end
 

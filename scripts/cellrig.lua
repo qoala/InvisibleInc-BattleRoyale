@@ -26,15 +26,10 @@ end
 local function backstabOffset(sim, cell)
 	local room = cell.procgenRoom
 	local simRoom = sim._mutableRooms[ room.roomIndex ]
-	local latest = sim._backstabLatestZone
-	if not room or not latest or not simRoom.backstabZone then
+	if not room or not simRoom.backstabState then
 		return 0
-	elseif simRoom.backstabZone <= latest then
-		return 4
-	elseif simRoom.backstabZone == latest + 1 then
-		return 8
-	elseif simRoom.backstabZone == latest + 2 then
-		return 12
+	else
+		return (1 + simRoom.backstabState) * 4
 	end
 	return 0
 end

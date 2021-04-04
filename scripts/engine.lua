@@ -25,15 +25,62 @@ function simengine:init( ... )
 			self._mutableRooms[room.roomIndex].backstabZone = backstabZone
 			-- simlog("DBGBACKSTAB %s: %s, %s", room.roomIndex, room.backstabExitDistance, backstabZone)
 
-			if (i % roomsPerCycle) == 0 then
-				backstabZone = backstabZone + 1
-			end
 			if i >= lastID then
 				break
 			end
+			if (i % roomsPerCycle) == 0 then
+				backstabZone = backstabZone + 1
+			end
 		end
 
-		-- TODO: calculate zone as turns pass
-		self._backstabLatestZone = 4
+		self._backstab_maxZone = backstabZone
 	end
+end
+
+function simengine:backstab_nextZone()
+	return self._backstab_nextZone
+end
+
+function simengine:backstab_nextZoneTurn()
+	return self._backstab_nextZoneTurn
+end
+
+function updateRooms(sim)
+	for _, simRoom in ipairs( sim._mutableRooms ) do
+		if simRoom.backstabZone == sim._backstab_nextZone then
+			-- LOCKDOWN
+			simRoom.backstabState = 0
+		elseif simRoom.backstabZone == sim._backstab_nextZone + 1 then
+			-- IMMINENT
+			simRoom.backstabState = 1
+		elseif simRoom.backstabZone == sim._backstab_nextZone + 2 then
+			-- WARNING
+			simRoom.backstabState = 2
+		end
+	end
+end
+
+function simengine:backstab_onEndTurn()
+	local difficultyOptions = self:getParams().difficultyOptions
+	local turnsPerCycle = difficultyOptions.backstab_turnsPerCycle
+	local startTurn = difficultyOptions.backstab_startTurn
+
+	-- Turn hasn't incremented yet.
+	local turn = math.ceil( (self:getTurnCount() + 2) / 2)
+
+	if turn < startTurn or (self._backstab_nextZone and self._backstab_nextZone > self._backstab_maxZone) then
+		-- simlog("DBGBACKSTAB ADVANCE: %s start=%s", turn, startTurn)
+		return
+	end
+
+	if turn == startTurn then
+		-- First zone is at 1. This cycle and the next won't lock anything.
+		self._backstab_nextZone = -1
+	end
+	if (turn - startTurn) % turnsPerCycle == 0 then
+		updateRooms(self)
+		self._backstab_nextZone = self._backstab_nextZone + 1
+		self._backstab_nextZoneTurn = turn + turnsPerCycle
+	end
+	-- simlog("DBGBACKSTAB ADVANCE: %s next=%s", turn, self._backstab_nextZone)
 end
