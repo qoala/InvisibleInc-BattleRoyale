@@ -5,7 +5,7 @@ local simdefs = include( "sim/simdefs" )
 local simquery = include( "sim/simquery" )
 
 
-oldInit = simengine.init
+local oldInit = simengine.init
 
 function simengine:init( ... )
 	oldInit( self, ... )

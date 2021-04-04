@@ -3,8 +3,6 @@ local array = include( "modules/array" )
 local util = include( "modules/util" )
 local procgen = include( "sim/procgen" )
 
-local oldGenerateLevel = procgen.generateLevel
-
 -- Modified mazegen:breadthFirstSearch(). Changes at -- BACKSTAB
 local function breadthFirstSearch( cxt, searchRoom, fn )
 	local rooms = { searchRoom }
@@ -45,6 +43,8 @@ function analyzeExitDistance( cxt )
 			room.backstabExitDistance = room.depth or 0
 		end )
 end
+
+local oldGenerateLevel = procgen.generateLevel
 
 function procgen.generateLevel( params )
 	local result = oldGenerateLevel( params )
