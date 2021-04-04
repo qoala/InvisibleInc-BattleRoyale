@@ -12,10 +12,10 @@ function simengine:init( ... )
 
 	-- Assign each room to a backstabZone
 	local difficultyOptions = self:getParams().difficultyOptions
-	if difficultyOptions.backstab_enabled and self._rooms then
+	local startTurn = difficultyOptions.backstab_startTurn
+	if startTurn and self._rooms then
 		local roomsPerCycle = difficultyOptions.backstab_roomsPerCycle
 		local finalRooms = difficultyOptions.backstab_finalRooms
-		local startTurn = difficultyOptions.backstab_startTurn
 
 		-- Make a shallow copy and sort by reverse distance from exit.
 		rooms = util.tdupe(self._rooms)
@@ -47,7 +47,7 @@ function simengine:backstab_nextZone()
 end
 
 function simengine:backstab_turnsUntilNextZone(turnOffset)
-	if self._backstab_nextZone and self._backstab_nextZone <= self._backstab_maxZone then
+	if self._backstab_nextZoneTurn and (not self._backstab_nextZone or self._backstab_nextZone <= self._backstab_maxZone) then
 		local turn = math.ceil( (self:getTurnCount() + 1 + (turnOffset or 0)) / 2)
 		return self._backstab_nextZoneTurn - turn
 	end
