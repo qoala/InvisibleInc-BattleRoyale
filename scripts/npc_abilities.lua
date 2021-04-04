@@ -1,8 +1,74 @@
 local util = include( "modules/util" )
 local mainframe_common = include("sim/abilities/mainframe_common")
 local simdefs = include("sim/simdefs")
+local simquery = include("sim/simquery")
 
 local createDaemon = mainframe_common.createDaemon
+
+function royaleFlushApplyPenalties(sim, unit, mpPenalty, sprintPenalty, disarmPenalty)
+	local uiTxt = nil
+	if mpPenalty and mpPenalty > 0 then
+		local mp = unit:getTraits().mp
+		local cappedPenalty = mp - math.max(mp - mpPenalty, 4)
+		unit:addMP(-cappedPenalty)
+		if not sprintPenalty then
+			-- Adjust max MP to avoid blocking the sprint ability
+			unit:addMPMax(-cappedPenalty)
+			unit:getTraits().backstab_mpMaxPenalty = cappedPenalty
+		end
+		sim:dispatchEvent( simdefs.EV_HUD_MPUSED, unit )
+		uiTxt = STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH.SLOW_EFFECT
+	end
+	if disarmPenalty and unit:hasTrait("ap") and unit:getTraits().ap > 0 then
+		unit:getTraits().ap = 0
+
+		uiTxt = STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH.DISARM_EFFECT
+	end
+
+	if uiTxt then
+		local x,y = unit:getLocation()
+		sim:dispatchEvent(simdefs.EV_UNIT_FLOAT_TXT,{txt=uiTxt,x=x,y=y,unit=unit,color={r=1/2,g=1,b=1,a=1}})
+	end
+end
+
+function royaleFlushHandleUnit(sim, unit)
+	if not simquery.isAgent(unit) or unit:getTraits().takenDrone then
+		return
+	end
+	if unit:getTraits().backstab_mpMaxPenalty then
+		unit:addMP(unit:getTraits().backstab_mpMaxPenalty)
+		unit:addMPMax(unit:getTraits().backstab_mpMaxPenalty)
+		unit:getTraits().backstab_mpMaxPenalty = nil
+	end
+
+	local x,y = unit:getLocation()
+	if not x then
+		return
+	end
+	local cell = sim:getCell(x, y)
+	local simRoom = sim._mutableRooms[cell.procgenRoom.roomIndex]
+	if not simRoom or not simRoom.backstabState then
+		return
+	elseif simRoom.backstabState == 0 then
+		local difficultyOptions = sim:getParams().difficultyOptions
+		royaleFlushApplyPenalties(sim, unit, difficultyOptions.backstab_redZoneMP, difficultyOptions.backstab_redZoneNoSprint, difficultyOptions.backstab_redZoneDisarm)
+	elseif simRoom.backstabState == 1 then
+		local difficultyOptions = sim:getParams().difficultyOptions
+		royaleFlushApplyPenalties(sim, unit, difficultyOptions.backstab_yellowZoneMP, difficultyOptions.backstab_yellowZoneNoSprint, difficultyOptions.backstab_yellowZoneDisarm)
+	end
+end
+
+function royaleFlushZoneDesc(mpPenalty, disarmPenalty)
+	local strings = STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH
+
+	if disarmPenalty then
+		return util.sformat(strings.ZONE_DISARM_DESC, mpPenalty)
+	elseif mpPenalty and mpPenalty >= 0 then
+		return util.sformat(strings.ZONE_SLOW_DESC, mpPenalty)
+	else
+		return strings.ZONE_WARNING_DESC
+	end
+end
 
 local npc_abilities =
 {
@@ -43,6 +109,10 @@ local npc_abilities =
 					sim:dispatchEvent( simdefs.EV_SHOW_DAEMON, { name = self.name, icon=self.icon, txt = txt } )
 					self._didAdvance = false
 				end
+
+				for _,unit in ipairs(sim:getPC():getUnits()) do
+					royaleFlushHandleUnit(sim, unit)
+				end
 			end
 		end,
 
@@ -57,10 +127,10 @@ local npc_abilities =
 			local desc = util.sformat(self.desc, difficultyOptions.backstab_turnsPerCycle)
 			section:addAbility( self.shortdesc, desc, "gui/icons/action_icons/Action_icon_Small/icon-item_shoot_small.png" )
 
-			local redDesc = util.sformat(strings.ZONE_DISARM_DESC, 4)
+			local redDesc = royaleFlushZoneDesc(difficultyOptions.backstab_redZoneMP, difficultyOptions.backstab_redZoneDisarm)
 			section:addAbility( strings.RED_DESC_TITLE, redDesc, "gui/icons/action_icons/Action_icon_Small/actionicon_noentry.png" )
 
-			local yellowDesc = util.sformat(strings.ZONE_SLOW_DESC, 2)
+			local yellowDesc = royaleFlushZoneDesc(difficultyOptions.backstab_yellowZoneMP, difficultyOptions.backstab_yellowZoneDisarm)
 			section:addAbility( strings.YELLOW_DESC_TITLE, yellowDesc, "gui/icons/action_icons/Action_icon_Small/actionicon_noentry.png" )
 
 			local blueDesc = strings.ZONE_WARNING_DESC

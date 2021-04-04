@@ -14,9 +14,12 @@ local MOD_STRINGS =
 			RED_DESC_TITLE = "RED ZONE",
 			YELLOW_DESC_TITLE = "YELLOW ZONE",
 			BLUE_DESC_TITLE = "BLUE ZONE",
-			ZONE_DISARM_DESC = "Agents starting their turn in this zone lose {1} AP and cannot attack.",
+			ZONE_DISARM_DESC = "Agents starting their turn in this zone lose {1} AP and lose their attack.",
 			ZONE_SLOW_DESC = "Agents starting their turn in this zone lose {1} AP.",
 			ZONE_WARNING_DESC = "No penalty.",
+
+			SLOW_EFFECT = "AP DRAINED",
+			DISARM_EFFECT = "AP/ATTACK DRAINED",
 		},
 	},
 }

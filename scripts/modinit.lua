@@ -49,6 +49,13 @@ local function load(modApi, options, params)
 		params.backstab_finalRooms = 1
 		params.backstab_turnsPerCycle = 3
 		params.backstab_startTurn = 5
+
+		params.backstab_redZoneMP = 4
+		params.backstab_redZoneNoSprint = true
+		params.backstab_redZoneDisarm = true
+		params.backstab_yellowZoneMP = 2
+		params.backstab_yellowZoneNoSprint = true
+		params.backstab_yellowZoneDisarm = false
 	end
 
 	local npc_abilities = include( scriptPath .. "/npc_abilities" )
