@@ -2,6 +2,7 @@
 # The * means "wildcard" and can be any number of any letters.
 
 makeconfig.mk
+out/*
 
 # Invisible, Inc. specific
 int/*

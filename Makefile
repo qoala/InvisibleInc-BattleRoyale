@@ -10,21 +10,24 @@ include makeconfig.mk
 
 .PHONY: build
 
-build: out/scripts.zip out/images.kwad
+build: out/modinfo.txt out/scripts.zip out/images.kwad
 
 install: build
 	mkdir -p $(INSTALL_PATH)
 	rm -f $(INSTALL_PATH)/*.kwad $(INSTALL_PATH)/*.zip
-	cp modinfo.txt $(INSTALL_PATH)/
+	cp out/modinfo.txt $(INSTALL_PATH)/
 	cp out/scripts.zip $(INSTALL_PATH)/
 	cp out/images.kwad $(INSTALL_PATH)/
 ifneq ($(INSTALL_PATH2),)
 	mkdir -p $(INSTALL_PATH2)
 	rm -f $(INSTALL_PATH2)/*.kwad $(INSTALL_PATH2)/*.zip
-	cp modinfo.txt $(INSTALL_PATH2)/
+	cp out/modinfo.txt $(INSTALL_PATH2)/
 	cp out/scripts.zip $(INSTALL_PATH2)/
 	cp out/images.kwad $(INSTALL_PATH2)/
 endif
+
+out/modinfo.txt: modinfo.txt
+	cp modinfo.txt out/modinfo.txt
 
 #
 # kwads and contained files
