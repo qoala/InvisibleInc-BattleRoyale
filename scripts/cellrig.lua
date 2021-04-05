@@ -104,27 +104,29 @@ function cellrig:refresh()
 	local scell = self._boardRig:getLastKnownCell( self._x, self._y )
 	local rawcell = self._game.simCore:getCell( self._x, self._y )
 	-- Cell must exist, be seen, and not be solid (e.g. a pillar)
-	if rawcell ~= nil and scell ~= nil and rawcell.tileIndex ~= cdefs.TILE_SOLID then
+	if rawcell ~= nil then
 		local idxSW = 0
 		local idxSE = 0
 		local idxNW = 0
 		local idxNE = 0
 		local show = false
 
-		local gfxOptions = self._game:getGfxOptions()
-		if gfxOptions.bMainframeMode then
-			-- pass
-		elseif gfxOptions.bTacticalView then
-			-- Each map tile draws as a box. All corners are the same.
-			idxSW = backstabOverlayTactical( self._game.simCore, rawcell )
-			idxSE = idxSW
-			idxNW = idxSW
-			idxNE = idxSW
-			show = idxSW ~= 0
-		else
-			-- Draw a border around the entire zone. Each corner depends on neighbors.
-			idxSW,idxSE,idxNW,idxNE = backstabOverlayNormal( self._game.simCore, rawcell )
-			show = idxSW ~= 0
+		if scell ~= nil and rawcell.tileIndex ~= cdefs.TILE_SOLID then
+			local gfxOptions = self._game:getGfxOptions()
+			if gfxOptions.bMainframeMode then
+				-- pass
+			elseif gfxOptions.bTacticalView then
+				-- Each map tile draws as a box. All corners are the same.
+				idxSW = backstabOverlayTactical( self._game.simCore, rawcell )
+				idxSE = idxSW
+				idxNW = idxSW
+				idxNE = idxSW
+				show = idxSW ~= 0
+			else
+				-- Draw a border around the entire zone. Each corner depends on neighbors.
+				idxSW,idxSE,idxNW,idxNE = backstabOverlayNormal( self._game.simCore, rawcell )
+				show = idxSW ~= 0
+			end
 		end
 		local x = (self._x - 1) * 2 + 1
 		local y = (self._y - 1) * 2 + 1
