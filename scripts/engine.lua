@@ -10,6 +10,19 @@ local oldInit = simengine.init
 function simengine:init( ... )
 	oldInit( self, ... )
 
+	local hasExit = false
+	for _,room in ipairs(self._rooms) do
+		if room.tags.exit or room.tags.exit_vault then
+			hasExit = true
+			break
+		end
+	end
+
+	if not hasExit then
+		-- No support for mid1/mid2/ending missions yet.
+		return
+	end
+
 	-- Assign each room to a backstabZone
 	local difficultyOptions = self:getParams().difficultyOptions
 	local startTurn = difficultyOptions.backstab_startTurn
