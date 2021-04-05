@@ -12,7 +12,7 @@ function createBackstabGridProp(game, simCore, params)
 
 	local tileDeck = MOAITileDeck2D.new()
 	tileDeck:setTexture(params.file)
-	tileDeck:setSize(unpack(params))
+	tileDeck:setSize(unpack(params.sizeParams))
 	tileDeck:setRect(-0.5, -0.5, 0.5, 0.5)
 	tileDeck:setUVRect(-0.5, -0.5, 0.5, 0.5)
 
@@ -51,7 +51,7 @@ function boardrig:init(layers, levelData, game, ...)
 
 	local simCore = game.simCore
 	if simCore:getParams().difficultyOptions.backstab_enabled then
-		local overlayGrid, _, overlayAnim = createBackstabGridProp(game, simCore, cdefs.BACKSTAB.OVERLAYTILES_PARAMS)
+		local overlayGrid, _, overlayAnim = createBackstabGridProp(game, simCore, cdefs.BACKSTAB.OVERLAYTILES)
 		layers["floor"]:insertProp(overlayGrid)
 
 		self._backstab_overlayGrid = overlayGrid
