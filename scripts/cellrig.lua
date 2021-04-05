@@ -12,8 +12,12 @@ local function backstabOverlayIndex(sim, cell)
 	local simRoom = sim._mutableRooms[ room.roomIndex ]
 	if not room or not simRoom.backstabState then
 		return 0
-	else
-		return (2 - simRoom.backstabState) * 42 * 2 + 1
+	elseif simRoom.backstabState == 0 then
+		return cdefs.BACKSTAB.OVERLAY.RED_CELL
+	elseif simRoom.backstabState == 1 then
+		return cdefs.BACKSTAB.OVERLAY.YELLOW_CELL
+	elseif simRoom.backstabState == 2 then
+		return cdefs.BACKSTAB.OVERLAY.BLUE_CELL
 	end
 	return 0
 end
@@ -37,16 +41,13 @@ function cellrig:refresh()
 
 		local idx = 0
 		local show = false
-		local flags = MOAIGridSpace.TILE_HIDE
 
 		local gfxOptions = self._game:getGfxOptions()
 		if gfxOptions.bMainframeMode then
 			-- pass
 		else
-			-- BACKSTAB: Tactical tileset is modified by backstab status of the cell.
 			idx = backstabOverlayIndex( self._game.simCore, rawcell )
-			show = true
-			flags = 0
+			show = idx ~= 0
 		end
 		local x = (self._x - 1) * 2 + 1
 		local y = (self._y - 1) * 2 + 1
