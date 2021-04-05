@@ -6,23 +6,35 @@ cdefs.BACKSTAB.OVERLAYTILES =
 {
 	-- 384x216 pixels, tiles are 24x24 pixels
 	file = "data/images/backstab/overlaytiles.png",
-	animTiming =
+	-- Tile indices corresponding to the start of an animation
+	animRoots =
 	{
-		{0.00, 1},
-		{0.70, 2},
-		{0.75, 3},
-		{0.80, 4},
-		{0.85, 5},
-		{0.90, 6},
-		{0.95, 7},
-		{1.00, 8},
-		{1.70, 7},
-		{1.75, 6},
-		{1.80, 5},
-		{1.85, 4},
-		{1.90, 3},
-		{1.95, 2},
-		{2.00, 1},
+		{root=1, anim="TACTICAL"},
+		{root=49, anim="TACTICAL"},
+		{root=97, anim="TACTICAL"},
+	},
+	maxAnimRoot = 97,
+	-- Time values paired with an offset to apply to each animation root index.
+	anims =
+	{
+		TACTICAL =
+		{
+			{t=0.00, offset=0},
+			{t=0.70, offset=1},
+			{t=0.75, offset=2},
+			{t=0.80, offset=3},
+			{t=0.85, offset=4},
+			{t=0.90, offset=5},
+			{t=0.95, offset=6},
+			{t=1.00, offset=7},
+			{t=1.70, offset=6},
+			{t=1.75, offset=5},
+			{t=1.80, offset=4},
+			{t=1.85, offset=3},
+			{t=1.90, offset=2},
+			{t=1.95, offset=1},
+			{t=2.00, offset=0},
+		},
 	},
 	sizeParams =
 	{
