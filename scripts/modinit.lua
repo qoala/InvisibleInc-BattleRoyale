@@ -61,16 +61,17 @@ local function init(modApi)
 	local dataPath = modApi:getDataPath()
 	KLEIResourceMgr.MountPackage(dataPath .. "/images.kwad", "data")
 
+	-- client overrides
+	include(scriptPath .. "/boardrig")
+	include(scriptPath .. "/cdefs")
 	include(scriptPath .. "/cellrig")
+
+	-- sim overrides
 	include(scriptPath .. "/engine")
 	include(scriptPath .. "/procgen")
 end
 
 local function earlyUnload(modApi)
-	local scriptPath = modApi:getScriptPath()
-
-	local patch_cdefs = include (scriptPath .. "/patch_cdefs")
-	patch_cdefs.resetLeveltiles()
 end
 
 local function earlyLoad(modApi, options, params)
@@ -79,9 +80,6 @@ end
 
 local function load(modApi, options, params)
 	local scriptPath = modApi:getScriptPath()
-
-	local patch_cdefs = include (scriptPath .. "/patch_cdefs")
-	patch_cdefs.patchLeveltiles()
 
 	if params then
 		params.backstab_enabled = true
