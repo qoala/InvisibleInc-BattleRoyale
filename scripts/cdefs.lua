@@ -9,15 +9,33 @@ cdefs.BACKSTAB.OVERLAYTILES =
 	-- Tile indices corresponding to the start of an animation
 	animRoots =
 	{
-		{root=1, anim="TACTICAL"},
-		{root=49, anim="TACTICAL"},
-		{root=97, anim="TACTICAL"},
+		-- tactical overview tiles
+		{root=1, anim="A"},
+		{root=49, anim="A"},
+		{root=97, anim="A"},
+
+		-- normal tiles
+		{root=9, anim="A"},
+		{root=17, anim="A"},
+		{root=25, anim="A"},
+		{root=33, anim="A"},
+		{root=41, anim="A"},
+		{root=57, anim="A"},
+		{root=65, anim="A"},
+		{root=73, anim="A"},
+		{root=81, anim="A"},
+		{root=89, anim="A"},
+		{root=105, anim="A"},
+		{root=113, anim="A"},
+		{root=121, anim="A"},
+		{root=129, anim="A"},
+		{root=137, anim="A"},
 	},
-	maxAnimRoot = 97,
+	maxAnimRoot = 137,
 	-- Time values paired with an offset to apply to each animation root index.
 	anims =
 	{
-		TACTICAL =
+		A =
 		{
 			{t=0.00, offset=0},
 			{t=0.70, offset=1},
@@ -54,4 +72,11 @@ cdefs.BACKSTAB.OVERLAY =
 	BLUE_CELL = 1,
 	YELLOW_CELL = 49,
 	RED_CELL = 97,
+
+	-- Offsets to normal tiles
+	FILL_OFFSET = 8,
+	VERTEDGE_OFFSET = 16,
+	HORZEDGE_OFFSET = 24,
+	INNERCORNER_OFFSET = 32,
+	OUTERCORNER_OFFSET = 40,
 }
