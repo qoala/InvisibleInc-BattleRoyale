@@ -13,7 +13,7 @@ local function backstabOverlayIndex(sim, cell)
 	if not room or not simRoom.backstabState then
 		return 0
 	else
-		return (2 - simRoom.backstabState) * 4 + 1
+		return (2 - simRoom.backstabState) * 42 + 1
 	end
 	return 0
 end
