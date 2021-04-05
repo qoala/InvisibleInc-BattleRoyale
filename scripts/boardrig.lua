@@ -4,11 +4,12 @@ local cdefs = include( "client_defs" )
 local boardrig = include("gameplay/boardrig")
 
 -- Variation on vanilla createGridProp that renders floor tiles.
+-- The overlay grid has a 2x2 of tiles for every floor tile.
 function createBackstabGridProp(game, simCore, params)
 	local boardWidth, boardHeight = simCore:getBoardSize()
 
 	local grid = MOAIGrid.new()
-	grid:initRectGrid(boardWidth, boardHeight, cdefs.BOARD_TILE_SIZE, cdefs.BOARD_TILE_SIZE)
+	grid:initRectGrid(boardWidth*2, boardHeight*2, cdefs.BOARD_TILE_SIZE/2, cdefs.BOARD_TILE_SIZE/2)
 
 	local tileDeck = MOAITileDeck2D.new()
 	tileDeck:setTexture(params.file)
@@ -17,7 +18,7 @@ function createBackstabGridProp(game, simCore, params)
 	tileDeck:setUVRect(-0.5, -0.5, 0.5, 0.5)
 
 	local remapper = MOAIDeckRemapper.new()
-	remapper:reserve(params.tileCount)
+	remapper:reserve(boardWidth * boardHeight * 4)
 
 	local prop = MOAIProp2D.new()
 	prop:setDeck(tileDeck)

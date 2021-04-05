@@ -13,7 +13,7 @@ local function backstabOverlayIndex(sim, cell)
 	if not room or not simRoom.backstabState then
 		return 0
 	else
-		return (2 - simRoom.backstabState) * 42 + 1
+		return (2 - simRoom.backstabState) * 42 * 2 + 1
 	end
 	return 0
 end
@@ -36,6 +36,7 @@ function cellrig:refresh()
 		local orientation = self._boardRig._game:getCamera():getOrientation()
 
 		local idx = 0
+		local show = false
 		local flags = MOAIGridSpace.TILE_HIDE
 
 		local gfxOptions = self._game:getGfxOptions()
@@ -44,9 +45,18 @@ function cellrig:refresh()
 		else
 			-- BACKSTAB: Tactical tileset is modified by backstab status of the cell.
 			idx = backstabOverlayIndex( self._game.simCore, rawcell )
+			show = true
 			flags = 0
 		end
-		self._boardRig._backstab_overlayGrid:getGrid():setTile( self._x, self._y, idx )
-		self._boardRig._backstab_overlayGrid:getGrid():setTileFlags( self._x, self._y, flags )
+		local x = (self._x - 1) * 2 + 1
+		local y = (self._y - 1) * 2 + 1
+		self._boardRig._backstab_overlayGrid:getGrid():setTile( x, y, idx )
+		self._boardRig._backstab_overlayGrid:getGrid():setTileFlags( x, y, show and MOAIGridSpace.TILE_Y_FLIP or MOAIGridSpace.TILE_HIDE )
+		self._boardRig._backstab_overlayGrid:getGrid():setTile( x+1, y, idx )
+		self._boardRig._backstab_overlayGrid:getGrid():setTileFlags( x+1, y, show and MOAIGridSpace.TILE_XY_FLIP or MOAIGridSpace.TILE_HIDE )
+		self._boardRig._backstab_overlayGrid:getGrid():setTile( x, y+1, idx )
+		self._boardRig._backstab_overlayGrid:getGrid():setTileFlags( x, y+1, show and 0 or MOAIGridSpace.TILE_HIDE )
+		self._boardRig._backstab_overlayGrid:getGrid():setTile( x+1, y+1, idx )
+		self._boardRig._backstab_overlayGrid:getGrid():setTileFlags( x+1, y+1, show and MOAIGridSpace.TILE_X_FLIP or MOAIGridSpace.TILE_HIDE )
 	end
 end
