@@ -35,23 +35,26 @@ cdefs.BACKSTAB.OVERLAYTILES =
 	-- Time values paired with an offset to apply to each animation root index.
 	anims =
 	{
+		-- 3s cycle. On from 0.5s-2.5s, with a 0.3s transition centered on each point.
+		-- (Contrast with movement zone curve. On from 0.25s-2.75s, with a 0.5s transition.)
 		A =
 		{
-			{t=0.00, offset=0},
-			{t=0.70, offset=1},
-			{t=0.75, offset=2},
-			{t=0.80, offset=3},
-			{t=0.85, offset=4},
-			{t=0.90, offset=5},
-			{t=0.95, offset=6},
-			{t=1.00, offset=7},
-			{t=1.70, offset=6},
-			{t=1.75, offset=5},
-			{t=1.80, offset=4},
-			{t=1.85, offset=3},
-			{t=1.90, offset=2},
-			{t=1.95, offset=1},
-			{t=2.00, offset=0},
+			{t=0.00, offset=7},
+			{t=0.25, offset=6},
+			{t=0.30, offset=5},
+			{t=0.45, offset=4},
+			{t=0.50, offset=3},
+			{t=0.55, offset=2},
+			{t=0.60, offset=1},
+			{t=0.65, offset=0},
+			{t=2.25, offset=1},
+			{t=2.30, offset=2},
+			{t=2.45, offset=3},
+			{t=2.50, offset=4},
+			{t=2.55, offset=5},
+			{t=2.60, offset=6},
+			{t=2.65, offset=7},
+			{t=3.00, offset=7},
 		},
 	},
 	sizeParams =
