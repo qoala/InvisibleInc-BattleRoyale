@@ -103,8 +103,8 @@ local function load(modApi, options, params)
 
 		local redPenalties = {}
 		params.backstab_redPenalties = redPenalties
-		redPenalties.mp = options["brRedMP"].value
-		redPenalties.noSprint = options["brRedMP"].value > 0
+		redPenalties.mp = options["brRedMp"].value
+		redPenalties.noSprint = options["brRedMp"].value > 0
 		redPenalties.disarm = options["brRedDisarm"].enabled
 		redPenalties.locate = options["brRedLocate"].enabled
 	end
