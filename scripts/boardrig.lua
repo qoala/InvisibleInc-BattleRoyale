@@ -49,7 +49,7 @@ function createBackstabGridProp(game, simCore, params)
 	prop:setGrid(grid)
 	prop:setRemapper(remapper)
 	prop:setLoc(-boardWidth * cdefs.BOARD_TILE_SIZE / 2, -boardHeight * cdefs.BOARD_TILE_SIZE / 2)
-	prop:setPriority(cdefs.BOARD_PRIORITY + 10)  -- Render above floor tiles.
+	prop:setPriority(cdefs.ZONES_PRIORITY + 10)  -- Render above floor tiles, floor props, and movement zones.
 	prop:setDepthTest(false)
 
 	anim:start()
