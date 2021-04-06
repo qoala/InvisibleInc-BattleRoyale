@@ -1,5 +1,5 @@
 # Invisible Inc. Battle Royale
-###A mod for "Invisible Inc." by KLEI Entertainment
+### A mod for "Invisible Inc." by KLEI Entertainment
 
 (Also known as Agent Unground Battleknowns. Credit to jlaub and AndrewKay's stream for that name.)
 
