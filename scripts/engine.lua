@@ -101,6 +101,8 @@ function simengine:backstab_advanceZones(turnOffset)
 		self._backstab_nextZone = nextZone
 		self._backstab_nextZoneTurn = startTurn + (nextZone + 1) * turnsPerCycle
 
+		self:dispatchEvent("EV_BACKSTAB_REFRESHOVERLAY", {})
+
 		-- simlog("DBGBACKSTAB ADVANCE: %s next=%s", turn, self._backstab_nextZone)
 		return true
 	end

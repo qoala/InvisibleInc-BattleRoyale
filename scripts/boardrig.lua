@@ -84,3 +84,18 @@ function boardrig:destroy(...)
 
 	oldDestroy(self, ...)
 end
+
+local oldOnSimEvent = boardrig.onSimEvent
+function boardrig:onSimEvent(ev, eventType, eventData, ...)
+	oldOnSimEvent(self, ev, eventType, eventData, ...)
+
+	if eventType == "EV_BACKSTAB_REFRESHOVERLAY" then
+		self:backstab_refreshCellOverlays()
+	end
+end
+
+function boardrig:backstab_refreshCellOverlays()
+	for _, cellRig in pairs( self._cellRigs ) do
+		cellRig:backstab_refreshOverlay()
+	end
+end

@@ -98,11 +98,12 @@ local oldRefresh = cellrig.refresh
 function cellrig:refresh()
 	oldRefresh(self)
 
-	if not self._boardRig._backstab_overlayGrid then
-		-- Bail out.
-		return
+	if self._boardRig._backstab_overlayGrid then
+		self:backstab_refreshOverlay()
 	end
+end
 
+function cellrig:backstab_refreshOverlay()
 	-- Refresh Backstab zone overlay
 	local scell = self._boardRig:getLastKnownCell( self._x, self._y )
 	local rawcell = self._game.simCore:getCell( self._x, self._y )
