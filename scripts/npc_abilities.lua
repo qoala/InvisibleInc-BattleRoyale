@@ -85,8 +85,6 @@ local npc_abilities =
 		OMNI_PROGRAM_LIST = false,
 		REVERSE_DAEMONS = false,
 
-		_didAdvance = false,
-
 		onSpawnAbility = function( self, sim, player )
 			self.turns = sim:backstab_turnsUntilNextZone()
 
@@ -101,17 +99,21 @@ local npc_abilities =
 
 		onTrigger = function( self, sim, evType, evData, userUnit )
 			if evType == simdefs.TRG_END_TURN and sim:getCurrentPlayer():isNPC() then
-				self._didAdvance = sim:backstab_advanceZones(1)  -- +1, Turn hasn't advanced yet.
-				self.turns = sim:backstab_turnsUntilNextZone(1)
 			elseif evType == simdefs.TRG_START_TURN and sim:getCurrentPlayer():isPC() then
-				if self._didAdvance then
-					local txt = self.turns and util.sformat(self.activedesc, self.turns) or STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH.FINISHED_DESC
-					sim:dispatchEvent( simdefs.EV_SHOW_DAEMON, { name = self.name, icon=self.icon, txt = txt } )
-					self._didAdvance = false
-				end
-
 				for _,unit in ipairs(sim:getPC():getUnits()) do
 					royaleFlushHandleUnit(sim, unit)
+				end
+
+				if sim:backstab_advanceZones() then
+					self.turns = 0
+					sim:dispatchEvent( simdefs.EV_HUD_REFRESH, {} )
+
+					local nextTurns = sim:backstab_turnsUntilNextZone(0)
+					local txt = nextTurns and util.sformat(self.activedesc, nextTurns) or STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH.FINISHED_DESC
+					sim:dispatchEvent( simdefs.EV_SHOW_DAEMON, { name = self.name, icon=self.icon, txt = txt } )
+					self.turns = nextTurns
+				else
+					self.turns = sim:backstab_turnsUntilNextZone(0)
 				end
 			end
 		end,
