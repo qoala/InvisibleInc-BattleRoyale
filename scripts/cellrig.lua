@@ -22,12 +22,15 @@ local function backstabOverlayTactical(sim, cell)
 	return 0
 end
 
-local function matchBackstabState(sim, x, y, roomIndex, state)
+local function matchBackstabState(sim, x, y, startCell, state)
 	local cell = sim:getCell(x, y)
 	if not cell or not cell.procgenRoom or cell.tileIndex == cdefs.TILE_SOLID then
 		return false
 	end
-	if cell.procgenRoom.roomIndex == roomIndex then
+	if not simquery.canPathBetween(sim, nil, startCell, cell) then
+		return false
+	end
+	if cell.procgenRoom.roomIndex == startCell.procgenRoom.roomIndex then
 		-- Trivial match
 		return true
 	end
@@ -73,14 +76,14 @@ local function backstabOverlayNormal(sim, cell)
 		return 0,0,0,0
 	end
 
-	matchW = matchBackstabState(sim, cell.x-1, cell.y, room.roomIndex, state)
-	matchSW = matchBackstabState(sim, cell.x-1, cell.y-1, room.roomIndex, state)
-	matchS = matchBackstabState(sim, cell.x, cell.y-1, room.roomIndex, state)
-	matchSE = matchBackstabState(sim, cell.x+1, cell.y-1, room.roomIndex, state)
-	matchE = matchBackstabState(sim, cell.x+1, cell.y, room.roomIndex, state)
-	matchNE = matchBackstabState(sim, cell.x+1, cell.y+1, room.roomIndex, state)
-	matchN = matchBackstabState(sim, cell.x, cell.y+1, room.roomIndex, state)
-	matchNW = matchBackstabState(sim, cell.x-1, cell.y+1, room.roomIndex, state)
+	matchW = matchBackstabState(sim, cell.x-1, cell.y, cell, state)
+	matchSW = matchBackstabState(sim, cell.x-1, cell.y-1, cell, state)
+	matchS = matchBackstabState(sim, cell.x, cell.y-1, cell, state)
+	matchSE = matchBackstabState(sim, cell.x+1, cell.y-1, cell, state)
+	matchE = matchBackstabState(sim, cell.x+1, cell.y, cell, state)
+	matchNE = matchBackstabState(sim, cell.x+1, cell.y+1, cell, state)
+	matchN = matchBackstabState(sim, cell.x, cell.y+1, cell, state)
+	matchNW = matchBackstabState(sim, cell.x-1, cell.y+1, cell, state)
 
 	local sw = base + backstabOverlayCornerOffset(matchW, matchSW, matchS)
 	local se = base + backstabOverlayCornerOffset(matchE, matchSE, matchS)
