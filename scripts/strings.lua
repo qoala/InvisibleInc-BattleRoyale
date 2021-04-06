@@ -21,7 +21,9 @@ local MOD_STRINGS =
 		BR_REDMP = "BATTLE ROYALE RED ZONE: AP PENALTY",
 		BR_REDMP_TIP = "<c:FF8411>RED ZONE: AP PENALTY</c>\nAP Penalty for agents ending in the red zone. Cannot lower AP below 4.",
 		BR_REDDISARM = "BATTLE ROYALE RED ZONE: DISARM",
-		BR_REDDISARM_TIP = "<c:FF8411>RED ZONE: DISARM</c>\nIf enabled, agents ending in the red zone lose their attack",
+		BR_REDDISARM_TIP = "<c:FF8411>RED ZONE: DISARM</c>\nIf enabled, agents ending in the red zone lose their attack.",
+		BR_REDLOCATE = "BATTLE ROYALE RED ZONE: LOCATE AGENT",
+		BR_REDLOCATE_TIP = "<c:FF8411>RED ZONE: LOCATE AGENT</c>\nIf enabled, agents ending in the red zone will be located at the start of their next turn.",
 	},
 
 	DAEMONS =
@@ -39,7 +41,9 @@ local MOD_STRINGS =
 			BLUE_DESC_TITLE = "BLUE ZONE",
 			ZONE_DISARM_DESC = "Agents ending their turn in this zone lose {1} AP and their attack next turn.",
 			ZONE_SLOW_DESC = "Agents ending their turn in this zone lose {1} AP next turn.",
+			ZONE_LOCATEONLY_DESC = "Agents ending their turn in this location will have their location relayed to the nearest guard next turn.",
 			ZONE_WARNING_DESC = "No penalty.",
+			ZONE_LOCATE_DESC = "They will also be located by a guard.",
 
 			SLOW_EFFECT = "AP DRAINED",
 			DISARM_EFFECT = "AP/ATTACK DRAINED",

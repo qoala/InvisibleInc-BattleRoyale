@@ -5,13 +5,29 @@ local simquery = include("sim/simquery")
 
 local createDaemon = mainframe_common.createDaemon
 
-function royaleFlushApplyPenalties(sim, unit, mpPenalty, sprintPenalty, disarmPenalty)
+function huntAgent(sim, agent, hunters)
+	local x,y = agent:getLocation()
+	local closestGuard = simquery.findClosestUnit(sim:getNPC():getUnits(), x, y,
+		function(guard)
+			return (guard:getBrain() and not guard:isKO()
+			    and not guard:getTraits().camera_drone
+			    and guard:getBrain():getSituation().ClassType ~= simdefs.SITUATION_COMBAT
+			    and guard:getBrain():getSituation().ClassType ~= simdefs.SITUATION_FLEE
+				and not hunters[guard:getID()])
+		end)
+	if closestGuard then
+		hunters[closestGuard:getID()] = agent
+		closestGuard:getBrain():spawnInterest(x, y, simdefs.SENSE_RADIO, simdefs.REASON_HUNTING, agent)
+    end
+end
+
+function royaleFlushApplyPenalties(sim, unit, penalties, hunters)
 	local uiTxt = nil
-	if mpPenalty and mpPenalty > 0 then
+	if penalties.mp and penalties.mp > 0 then
 		local mp = unit:getTraits().mp
-		local cappedPenalty = mp - math.max(mp - mpPenalty, 4)
+		local cappedPenalty = mp - math.max(mp - penalties.mp, 4)
 		unit:addMP(-cappedPenalty)
-		if not sprintPenalty then
+		if not penalties.noSprint then
 			-- Adjust max MP to avoid blocking the sprint ability
 			unit:addMPMax(-cappedPenalty)
 			unit:getTraits().backstab_mpMaxPenalty = cappedPenalty
@@ -19,7 +35,7 @@ function royaleFlushApplyPenalties(sim, unit, mpPenalty, sprintPenalty, disarmPe
 		sim:dispatchEvent( simdefs.EV_HUD_MPUSED, unit )
 		uiTxt = STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH.SLOW_EFFECT
 	end
-	if disarmPenalty and unit:hasTrait("ap") and unit:getTraits().ap > 0 then
+	if penalties.disarm and unit:hasTrait("ap") and unit:getTraits().ap > 0 then
 		unit:getTraits().ap = 0
 
 		uiTxt = STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH.DISARM_EFFECT
@@ -29,9 +45,13 @@ function royaleFlushApplyPenalties(sim, unit, mpPenalty, sprintPenalty, disarmPe
 		local x,y = unit:getLocation()
 		sim:dispatchEvent(simdefs.EV_UNIT_FLOAT_TXT,{txt=uiTxt,x=x,y=y,unit=unit,color={r=1/2,g=1,b=1,a=1}})
 	end
+
+	if penalties.locate then
+		huntAgent(sim, unit, hunters)
+	end
 end
 
-function royaleFlushHandleUnit(sim, unit)
+function royaleFlushHandleUnit(sim, unit, hunters)
 	if not simquery.isAgent(unit) or unit:getTraits().takenDrone then
 		return
 	end
@@ -50,23 +70,52 @@ function royaleFlushHandleUnit(sim, unit)
 	if not simRoom or not simRoom.backstabState then
 		return
 	elseif simRoom.backstabState == 0 then
-		local difficultyOptions = sim:getParams().difficultyOptions
-		royaleFlushApplyPenalties(sim, unit, difficultyOptions.backstab_redZoneMP, difficultyOptions.backstab_redZoneNoSprint, difficultyOptions.backstab_redZoneDisarm)
+		royaleFlushApplyPenalties(sim, unit, sim:getParams().difficultyOptions.backstab_redPenalties, hunters)
 	elseif simRoom.backstabState == 1 then
 		local difficultyOptions = sim:getParams().difficultyOptions
-		royaleFlushApplyPenalties(sim, unit, difficultyOptions.backstab_yellowZoneMP, difficultyOptions.backstab_yellowZoneNoSprint, difficultyOptions.backstab_yellowZoneDisarm)
+		royaleFlushApplyPenalties(sim, unit, sim:getParams().difficultyOptions.backstab_yellowPenalties, hunters)
 	end
 end
 
-function royaleFlushZoneDesc(mpPenalty, disarmPenalty)
+function royaleFlushZoneDesc(penalties)
 	local strings = STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH
 
-	if disarmPenalty then
-		return util.sformat(strings.ZONE_DISARM_DESC, mpPenalty)
-	elseif mpPenalty and mpPenalty >= 0 then
-		return util.sformat(strings.ZONE_SLOW_DESC, mpPenalty)
+	local desc
+	if penalties.disarm then
+		desc = util.sformat(strings.ZONE_DISARM_DESC, penalties.mp)
+	elseif penalties.mp and penalties.mp >= 0 then
+		desc = util.sformat(strings.ZONE_SLOW_DESC, penalties.mp)
 	else
-		return strings.ZONE_WARNING_DESC
+		if penalties.locate then
+			return strings.ZONE_LOCATEONLY_DESC
+		else
+			return strings.ZONE_WARNING_DESC
+		end
+	end
+
+	if penalties.locate then
+		return desc .. " " .. strings.ZONE_LOCATE_DESC
+	else
+		return desc
+	end
+end
+
+local function updateLegacyParams(difficultyOptions)
+	if difficultyOptions.backstab_redZoneMP and not difficultyOptions.backstab_redPenalties then
+		difficultyOptions.backstab_yellowPenalties =
+		{
+			mp = difficultyOptions.backstab_yellowZoneMP,
+			noSprint = difficultyOptions.backstab_yellowZoneNoSprint,
+			disarm = difficultyOptions.backstab_yellowZoneDisarm,
+			locate = false
+		}
+		difficultyOptions.backstab_redPenalties =
+		{
+			mp = difficultyOptions.backstab_redZoneMP,
+			noSprint = difficultyOptions.backstab_redZoneNoSprint,
+			disarm = difficultyOptions.backstab_redZoneDisarm,
+			locate = difficultyOptions.backstab_redZoneLocate,
+		}
 	end
 end
 
@@ -86,6 +135,8 @@ local npc_abilities =
 		REVERSE_DAEMONS = false,
 
 		onSpawnAbility = function( self, sim, player )
+			updateLegacyParams(sim:getParams().difficultyOptions)
+
 			self.turns = sim:backstab_turnsUntilNextZone()
 
 			sim:addTrigger( simdefs.TRG_START_TURN, self )
@@ -100,8 +151,9 @@ local npc_abilities =
 		onTrigger = function( self, sim, evType, evData, userUnit )
 			if evType == simdefs.TRG_END_TURN and sim:getCurrentPlayer():isNPC() then
 			elseif evType == simdefs.TRG_START_TURN and sim:getCurrentPlayer():isPC() then
+				local hunters = {}
 				for _,unit in ipairs(sim:getPC():getUnits()) do
-					royaleFlushHandleUnit(sim, unit)
+					royaleFlushHandleUnit(sim, unit, hunters)
 				end
 
 				if sim:backstab_advanceZones() then
@@ -129,10 +181,10 @@ local npc_abilities =
 			local desc = util.sformat(self.desc, difficultyOptions.backstab_turnsPerCycle)
 			section:addAbility( self.shortdesc, desc, "gui/icons/action_icons/Action_icon_Small/icon-item_shoot_small.png" )
 
-			local redDesc = royaleFlushZoneDesc(difficultyOptions.backstab_redZoneMP, difficultyOptions.backstab_redZoneDisarm)
+			local redDesc = royaleFlushZoneDesc(difficultyOptions.backstab_redPenalties)
 			section:addAbility( strings.RED_DESC_TITLE, redDesc, "gui/icons/action_icons/Action_icon_Small/actionicon_noentry.png" )
 
-			local yellowDesc = royaleFlushZoneDesc(difficultyOptions.backstab_yellowZoneMP, difficultyOptions.backstab_yellowZoneDisarm)
+			local yellowDesc = royaleFlushZoneDesc(difficultyOptions.backstab_yellowPenalties)
 			section:addAbility( strings.YELLOW_DESC_TITLE, yellowDesc, "gui/icons/action_icons/Action_icon_Small/actionicon_noentry.png" )
 
 			local blueDesc = strings.ZONE_WARNING_DESC

@@ -57,6 +57,10 @@ local function init(modApi)
 		noUpdate = true,
 		enabled = true,
 	})
+	modApi:addGenerationOption("brRedLocate", STRINGS.BACKSTAB.OPTIONS.BR_REDLOCATE, STRINGS.BACKSTAB.OPTIONS.BR_REDLOCATE_TIP, {
+		noUpdate = true,
+		enabled = false,
+	})
 
 	local dataPath = modApi:getDataPath()
 	KLEIResourceMgr.MountPackage(dataPath .. "/images.kwad", "data")
@@ -90,30 +94,19 @@ local function load(modApi, options, params)
 		params.backstab_turnsPerCycle = options["brTurnsPerCycle"] and options["brTurnsPerCycle"].value or 3
 		params.backstab_finalRooms = options["brFinalRooms"] and options["brFinalRooms"].value or 1
 
-		if options["brYellowMp"] then
-			params.backstab_yellowZoneMP = options["brYellowMp"].value
-			params.backstab_yellowZoneNoSprint = options["brYellowMp"].value > 0
-		else
-			params.backstab_yellowZoneMP = 2
-			params.backstab_yellowZoneNoSprint = true
-		end
-		if options["brYellowDisarm"] then
-			params.backstab_yellowZoneDisarm = options["brYellowDisarm"].enabled
-		else
-			params.backstab_yellowZoneDisarm = false
-		end
-		if options["brRedMP"] then
-			params.backstab_redZoneMP = options["brRedMP"].value
-			params.backstab_redZoneNoSprint = options["brRedMP"].value > 0
-		else
-			params.backstab_redZoneMP = 4
-			params.backstab_redZoneNoSprint = true
-		end
-		if options["brRedDisarm"] then
-			params.backstab_redZoneDisarm = options["brRedDisarm"].enabled
-		else
-			params.backstab_redZoneDisarm = true
-		end
+		local yellowPenalties = {}
+		params.backstab_yellowPenalties = yellowPenalties
+		yellowPenalties.mp = options["brYellowMp"].value
+		yellowPenalties.noSprint = options["brYellowMp"].value > 0
+		yellowPenalties.disarm = options["brYellowDisarm"].enabled
+		yellowPenalties.locate = false
+
+		local redPenalties = {}
+		params.backstab_redPenalties = redPenalties
+		redPenalties.mp = options["brRedMP"].value
+		redPenalties.noSprint = options["brRedMP"].value > 0
+		redPenalties.disarm = options["brRedDisarm"].enabled
+		redPenalties.locate = options["brRedLocate"].enabled
 	end
 
 	local npc_abilities = include( scriptPath .. "/npc_abilities" )
