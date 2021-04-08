@@ -127,6 +127,7 @@ local npc_abilities =
 		standardDaemon = false,
 		reverseDaemon = false,
 		permanent = true,
+		noDaemonReversal = true,
 
 		ENDLESS_DAEMONS = false,
 		PROGRAM_LIST = false,

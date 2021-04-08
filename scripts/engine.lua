@@ -10,6 +10,11 @@ local oldInit = simengine.init
 function simengine:init( ... )
 	oldInit( self, ... )
 
+	local difficultyOptions = self:getParams().difficultyOptions
+	if not difficultyOptions.backstab_enabled then
+		return
+	end
+
 	local hasExit = false
 	for _,room in ipairs(self._rooms) do
 		if room.tags.exit or room.tags.exit_vault then
@@ -24,7 +29,6 @@ function simengine:init( ... )
 	end
 
 	-- Assign each room to a backstabZone
-	local difficultyOptions = self:getParams().difficultyOptions
 	local startTurn = difficultyOptions.backstab_startTurn
 	if startTurn and self._rooms then
 		local roomsPerCycle = difficultyOptions.backstab_roomsPerCycle
@@ -51,7 +55,7 @@ function simengine:init( ... )
 
 		self._backstab_nextZoneTurn = startTurn
 		self:backstab_advanceZones()
-		self:getNPC():addMainframeAbility(self, "backstab_royaleFlush", 0)
+		self:getNPC():addMainframeAbility(self, "backstab_royaleFlush", nil, 0)
 	end
 end
 
