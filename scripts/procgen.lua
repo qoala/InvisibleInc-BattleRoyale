@@ -12,7 +12,7 @@ local function breadthFirstSearch( cxt, searchRoom, fn )
 		local room = table.remove( rooms )
 		for i, exit in ipairs( room.exits ) do
 			-- BACKSTAB: Minimal extra cost when exit.barrier (locked door or laser)
-			local cost = exit.barrier and 1.1 or 1
+			local cost = exit.barrier and 1.01 or 1
 			if (exit.room.depth or math.huge) > room.depth + cost then
 				exit.room.depth = room.depth + cost
 				table.insert( rooms, 1, exit.room )
@@ -40,7 +40,7 @@ function analyzeExitDistance( cxt )
 
 	breadthFirstSearch( cxt, originRoom,
 	    function( room )
-			room.backstabExitDistance = room.depth or 0
+			room.backstab_exitDistance = (room.depth or 0)
 		end )
 end
 

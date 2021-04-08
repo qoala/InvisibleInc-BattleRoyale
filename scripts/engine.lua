@@ -7,6 +7,20 @@ local simquery = include( "sim/simquery" )
 
 local oldInit = simengine.init
 
+-- Sort by reverse distance from exit
+function compareRooms(a, b)
+	if a.backstab_exitDistance ~= b.backstab_exitDistance then
+		return a.backstab_exitDistance > b.backstab_exitDistance
+	end
+
+	-- Treat objectives as closer than other rooms at the same effective distance.
+	if a.tags.objective ~= b.tags.objective then
+		return b.tags.objective
+	end
+
+	return a.roomIndex > b.roomIndex
+end
+
 function simengine:init( ... )
 	oldInit( self, ... )
 
@@ -36,12 +50,12 @@ function simengine:init( ... )
 
 		-- Make a shallow copy and sort by reverse distance from exit.
 		rooms = util.tdupe(self._rooms)
-		table.sort(rooms, function(a,b) return a.backstabExitDistance > b.backstabExitDistance end)
+		table.sort(rooms, compareRooms)
 		local backstabZone = 1
 		local lastID = util.tcount(self._rooms) - finalRooms
 		for i, room in ipairs( rooms ) do
 			self._mutableRooms[room.roomIndex].backstabZone = backstabZone
-			-- simlog("DBGBACKSTAB %s: %s, %s", room.roomIndex, room.backstabExitDistance, backstabZone)
+			-- simlog("DBGBACKSTAB %s: %s, %s", room.roomIndex, room.backstab_exitDistance, backstabZone)
 
 			if i >= lastID then
 				break
