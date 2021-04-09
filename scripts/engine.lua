@@ -9,8 +9,12 @@ local oldInit = simengine.init
 
 -- Sort by reverse distance from exit
 function compareRooms(a, b)
+	if a.backstab_objectivePathDistance ~= b.backstab_objectivePathDistance then
+		return (a.backstab_objectivePathDistance or 99) > (b.backstab_objectivePathDistance or 99)
+	end
+
 	if a.backstab_exitDistance ~= b.backstab_exitDistance then
-		return a.backstab_exitDistance > b.backstab_exitDistance
+		return (a.backstab_exitDistance or 99) > (b.backstab_exitDistance or 99)
 	end
 
 	-- Treat objectives as closer than other rooms at the same effective distance.
@@ -30,14 +34,19 @@ function simengine:init( ... )
 	end
 
 	local hasExit = false
+	local hasObjectivePath = true
 	for _,room in ipairs(self._rooms) do
+		if room.backstab_objectivePathDistance then
+			hasObjectivePath = true
+		end
 		if room.tags.exit or room.tags.exit_vault then
 			hasExit = true
 			break
 		end
 	end
 
-	if not hasExit then
+	-- simlog("DBGBACKSTAB: hasExit=%s hasObjectivePath=%s", tostring(hasExit), tostring(hasObjectivePath))
+	if not hasExit and not hasObjectivePath then
 		-- No support for mid1/mid2/ending missions yet.
 		return
 	end
@@ -51,21 +60,33 @@ function simengine:init( ... )
 		-- Make a shallow copy and sort by reverse distance from exit.
 		rooms = util.tdupe(self._rooms)
 		table.sort(rooms, compareRooms)
-		local backstabZone = 1
+		local maxBackstabZone
 		local lastID = util.tcount(self._rooms) - finalRooms
 		for i, room in ipairs( rooms ) do
+			local backstabZone = math.ceil(i / roomsPerCycle)
+			local limited = false
+			if room.backstab_objectivePathDistance == 0 then
+				backstabZone = backstabZone + 1
+				limited = true
+			end
+
+			-- simlog("DBGBACKSTAB room=%s: toExit=%s toObjPath=%s zone=%s limit=%s",
+			--	room.roomIndex, room.backstab_exitDistance, room.backstab_objectivePathDistance or "",
+			--	backstabZone, limited and "t" or "f")
 			self._mutableRooms[room.roomIndex].backstabZone = backstabZone
-			-- simlog("DBGBACKSTAB %s: %s, %s", room.roomIndex, room.backstab_exitDistance, backstabZone)
+			if limited then
+				maxBackstabZone = backstabZone - 1
+				self._mutableRooms[room.roomIndex].backstabZoneLimited = true
+			else
+				maxBackstabZone = backstabZone
+			end
 
 			if i >= lastID then
 				break
 			end
-			if (i % roomsPerCycle) == 0 then
-				backstabZone = backstabZone + 1
-			end
 		end
 
-		self._backstab_maxZone = backstabZone
+		self._backstab_maxZone = maxBackstabZone
 
 		self._backstab_nextZoneTurn = startTurn
 		self:backstab_advanceZones()
@@ -87,13 +108,15 @@ end
 
 function updateRooms(sim, zone)
 	for _, simRoom in ipairs( sim._mutableRooms ) do
-		if simRoom.backstabZone == zone then
+		if not simRoom.backstabZone then
+			-- pass
+		elseif simRoom.backstabZone <= zone and not simRoom.backstabZoneLimited then
 			-- RED
 			simRoom.backstabState = 0
-		elseif simRoom.backstabZone == zone + 1 then
+		elseif simRoom.backstabZone <= zone + 1 then
 			-- YELLOW
 			simRoom.backstabState = 1
-		elseif simRoom.backstabZone == zone + 2 then
+		elseif simRoom.backstabZone <= zone + 2 then
 			-- BLUE
 			simRoom.backstabState = 2
 		end
