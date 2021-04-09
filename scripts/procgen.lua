@@ -23,7 +23,10 @@ function cellInFrontOfUnit(cxt, unit)
 	if type(unit) == "string" then
 		unit = cxt:pickUnit(function (u) return u.template == unit end)
 	end
-	-- simlog("DBGBACKSTAB: %s %d,%d %d", unit.template, unit.x, unit.y, unit.unitData.facing)
+	if not unit then
+		return
+	end
+	simlog("LOG_BACKSTAB", "Objective %s %d,%d %d", unit.template, unit.x, unit.y, unit.unitData.facing)
 	local dx, dy = simquery.getDeltaFromDirection(unit.unitData.facing)
 	return cxt:cellAt(unit.x + dx, unit.y + dy)
 end
@@ -104,16 +107,16 @@ function analyzeObjectivePath(cxt, exitRoom)
 
 	local rooms = {}
 	for _,cell in ipairs(objectiveCells) do
-		-- simlog("DBGBACKSTAB Objective path: INIT %d,%d - %d,%d", cell.x, cell.y, exitCell.x, exitCell.y)
+		simlog("LOG_BACKSTAB", "Objective path: INIT %d,%d - %d,%d", cell.x, cell.y, exitCell.x, exitCell.y)
 		local pathRooms = {}
 		local lastRoom = nil
 		local path = cxt:findPath(cell.x, cell.y, exitCell.x, exitCell.y)
-		-- simlog("DBGBACKSTAB Objective path: total cost %d", path:getTotalMoveCost())
+		simlog("LOG_BACKSTAB", "Objective path: total cost %d", path:getTotalMoveCost())
 		for _,node in ipairs(path:getNodes()) do
 			local cell = cxt:cellAt(node.location.x, node.location.y)
 			local room = cell.procgenRoom
 			if room ~= lastRoom then
-				-- simlog("DBGBACKSTAB Objective path: add room %d", room.roomIndex)
+				simlog("LOG_BACKSTAB", "Objective path: add room %d", room.roomIndex)
 				table.insert(pathRooms, room)
 				lastRoom = room
 			end

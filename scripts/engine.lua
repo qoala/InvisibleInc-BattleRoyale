@@ -45,7 +45,7 @@ function simengine:init( ... )
 		end
 	end
 
-	-- simlog("DBGBACKSTAB: hasExit=%s hasObjectivePath=%s", tostring(hasExit), tostring(hasObjectivePath))
+	simlog("LOG_BACKSTAB", "SIMINIT hasExit=%s hasObjectivePath=%s", tostring(hasExit), tostring(hasObjectivePath))
 	if not hasExit and not hasObjectivePath then
 		-- No support for mid1/mid2/ending missions yet.
 		return
@@ -70,9 +70,9 @@ function simengine:init( ... )
 				limited = true
 			end
 
-			-- simlog("DBGBACKSTAB room=%s: toExit=%s toObjPath=%s zone=%s limit=%s",
-			--	room.roomIndex, room.backstab_exitDistance, room.backstab_objectivePathDistance or "",
-			--	backstabZone, limited and "t" or "f")
+			simlog("LOG_BACKSTAB", "room=%s: toExit=%s toObjPath=%s zone=%s limit=%s",
+				room.roomIndex, room.backstab_exitDistance, room.backstab_objectivePathDistance or "",
+				backstabZone, limited and "t" or "f")
 			self._mutableRooms[room.roomIndex].backstabZone = backstabZone
 			if limited then
 				maxBackstabZone = backstabZone - 1
@@ -131,7 +131,7 @@ function simengine:backstab_advanceZones(turnOffset)
 	local turn = math.ceil( (self:getTurnCount() + 1 + (turnOffset or 0)) / 2)
 
 	if turn < startTurn or (self._backstab_nextZone and self._backstab_nextZone > self._backstab_maxZone) then
-		-- simlog("DBGBACKSTAB ADVANCE: %s start=%s", turn, startTurn)
+		simlog("LOG_BACKSTAB", "ADVANCE: turn=%s start=%s", turn, startTurn)
 		return false
 	end
 
@@ -144,7 +144,7 @@ function simengine:backstab_advanceZones(turnOffset)
 
 		self:dispatchEvent("EV_BACKSTAB_REFRESHOVERLAY", {})
 
-		-- simlog("DBGBACKSTAB ADVANCE: %s next=%s", turn, self._backstab_nextZone)
+		simlog("LOG_BACKSTAB", "ADVANCE: turn=%s next=%s", turn, self._backstab_nextZone)
 		return true
 	end
 	return false
