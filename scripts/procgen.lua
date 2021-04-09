@@ -1,7 +1,10 @@
 
+local cdefs = include( "client_defs" )
 local array = include( "modules/array" )
+local astar = include( "modules/astar" )
 local rand = include( "modules/rand" )
 local util = include( "modules/util" )
+local astar_handlers = include( "sim/astar_handlers" )
 local procgen = include( "sim/procgen" )
 local procgen_context = include( "sim/procgen_context" )
 local simquery = include( "sim/simquery" )
@@ -19,6 +22,47 @@ local function isExit(r)
 	return isNormalExit(r) or isCampaignExit(r)
 end
 
+-- Modified copy of procgen_context:canPath. Changes at -- BACKSTAB.
+function canPath(cxt, x0, y0, x1, y1, includeLockedDoors)
+	local cell1 = cxt:cellAt(x0, y0)
+	local cell2 = cxt:cellAt(x1, y1)
+	if not cell1 or not cell2 then
+		return false
+	end
+	if cell2.tileIndex == nil or cell2.tileIndex == cdefs.TILE_SOLID or cell2.cell ~= nil or cell2.impass or cell2.dynamic_impass then
+		return false
+	end
+
+	local dx, dy = x1-x0, y1-y0
+	if math.abs(dx) > 1 or math.abs(dy) > 1 then
+		return false
+	end
+	if dx ~= 0 and dy ~= 0 then
+		return cxt:canPath(x0, y0, x1, y0, includeLockedDoors) and cxt:canPath(x1, y0, x1, y1, includeLockedDoors)
+		 and cxt:canPath(x0, y0, x0, y1, includeLockedDoors) and cxt:canPath(x0, y1, x1, y1, includeLockedDoors)
+	else
+		--check walls
+		local dir1 = simquery.getDirectionFromDelta(dx, dy)
+		local side1 = cell1.sides and cell1.sides[dir1]
+		-- BACKSTAB: Allow considering locked doors as passable
+		if side1 and (not side1.door or (side1.locked and not includeLockedDoors)) then
+			return false
+		end
+		local dir2 = simquery.getDirectionFromDelta(-dx, -dy)
+		local side2 = cell2.sides and cell2.sides[dir2]
+		-- BACKSTAB: Allow considering locked doors as passable
+		if side2 and (not side2.door or (side2.locked and not includeLockedDoors)) then
+			return false
+		end
+
+		return true
+	end
+	return false
+end
+function findLockedPath(cxt, x0, y0, x1, y1)
+	return cxt.lockedDoorPather:findPath( {x = x0, y = y0}, {x = x1, y = y1})
+end
+
 function cellInFrontOfUnit(cxt, unit)
 	if type(unit) == "string" then
 		unit = cxt:pickUnit(function (u) return u.template == unit end)
@@ -26,7 +70,7 @@ function cellInFrontOfUnit(cxt, unit)
 	if not unit then
 		return
 	end
-	simlog("LOG_BACKSTAB", "Objective %s %d,%d %d", unit.template, unit.x, unit.y, unit.unitData.facing)
+	simlog("LOG_BACKSTAB", "Objective: %s %d,%d %d", unit.template, unit.x, unit.y, unit.unitData.facing)
 	local dx, dy = simquery.getDeltaFromDirection(unit.unitData.facing)
 	return cxt:cellAt(unit.x + dx, unit.y + dy)
 end
@@ -84,6 +128,9 @@ function analyzeExitDistance(cxt)
 end
 
 function analyzeObjectivePath(cxt, exitRoom)
+	cxt.pather = astar.AStar:new(astar_handlers.backstab_plan_handler:new(cxt, nil, {includeLockedDoors=false}))
+	cxt.lockedDoorPather = astar.AStar:new(astar_handlers.backstab_plan_handler:new(cxt, nil, {includeLockedDoors=true}))
+
 	local exitCell
 	if exitRoom.tags.exit_final then
 		exitCell = cxt:cellInFrontOfUnit("yellow_level_console")
@@ -117,6 +164,18 @@ function analyzeObjectivePath(cxt, exitRoom)
 			local room = cell.procgenRoom
 			if room ~= lastRoom then
 				simlog("LOG_BACKSTAB", "Objective path: add room %d", room.roomIndex)
+				table.insert(pathRooms, room)
+				lastRoom = room
+			end
+		end
+		lastRoom = nil
+		path = cxt:findLockedPath(cell.x, cell.y, exitCell.x, exitCell.y)
+		simlog("LOG_BACKSTAB", "Objective lockedpath: total cost %d", path:getTotalMoveCost())
+		for _,node in ipairs(path:getNodes()) do
+			local cell = cxt:cellAt(node.location.x, node.location.y)
+			local room = cell.procgenRoom
+			if room ~= lastRoom then
+				simlog("LOG_BACKSTAB", "Objective lockedpath: add room %d", room.roomIndex)
 				table.insert(pathRooms, room)
 				lastRoom = room
 			end
@@ -157,9 +216,10 @@ function procgen.generateLevel( params )
 			units = result.units,
 			rnd = rand.createGenerator( params.seed % 2^32 ),
 
+			canPath = canPath,
 			cellInFrontOfUnit = cellInFrontOfUnit,
+			findLockedPath = findLockedPath,
 
-			canPath = procgen_context.canPath,
 			cellAt = procgen_context.cellAt,
 			findPath = procgen_context.findPath,
 			getBounds = procgen_context.getBounds,

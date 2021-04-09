@@ -71,6 +71,7 @@ local function init(modApi)
 	include(scriptPath .. "/cellrig")
 
 	-- sim overrides
+	include(scriptPath .. "/astar_handlers")
 	include(scriptPath .. "/engine")
 	include(scriptPath .. "/procgen")
 end
