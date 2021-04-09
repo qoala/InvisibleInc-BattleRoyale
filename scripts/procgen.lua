@@ -4,9 +4,12 @@ local util = include( "modules/util" )
 local procgen = include( "sim/procgen" )
 
 -- Modified mazegen:breadthFirstSearch(). Changes at -- BACKSTAB
-local function breadthFirstSearch( cxt, searchRoom, fn )
-	local rooms = { searchRoom }
-	searchRoom.depth = 0
+local function breadthFirstSearch( cxt, startRooms, fn )
+	-- BACKSTAB: Support multiple 0-depth rooms.
+	local rooms = util.tdupe(startRooms)
+	for _,r in ipairs(startRooms) do
+		r.depth = 0
+	end
 
 	while #rooms > 0 do
 		local room = table.remove( rooms )
@@ -29,16 +32,19 @@ local function breadthFirstSearch( cxt, searchRoom, fn )
 end
 
 function analyzeExitDistance( cxt )
-	-- Discover depths from the entrance room to all the other rooms.
-	local originRoom = array.findIf( cxt.rooms,
-	    function( r )
-			return r.tags ~= nil and (r.tags.exit or r.tags.exit_vault or r.tags.exit_mid_1 or r.tags.entry_mid_2 or r.tags.exit_final)
-		end )
-	if not originRoom then
+	-- Find exit room(s)
+	local exitRooms = {}
+	for _,r in ipairs(cxt.rooms) do
+		if r.tags ~= nil and (r.tags.exit or r.tags.exit_vault or r.tags.exit_mid_1 or r.tags.entry_mid_2 or r.tags.exit_final) then
+			table.insert(exitRooms, r)
+		end
+	end
+	if not exitRooms[1] then
 		return
 	end
 
-	breadthFirstSearch( cxt, originRoom,
+	-- Discover depths from the exit room to all the other rooms.
+	breadthFirstSearch( cxt, exitRooms,
 	    function( room )
 			room.backstab_exitDistance = (room.depth or 0)
 		end )
