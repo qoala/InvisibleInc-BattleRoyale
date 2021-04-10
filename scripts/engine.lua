@@ -9,12 +9,30 @@ local oldInit = simengine.init
 
 -- Sort by reverse distance from exit
 function compareRooms(a, b)
+	if a.backstab_exitDistance ~= b.backstab_exitDistance then
+		return (a.backstab_exitDistance or math.huge) > (b.backstab_exitDistance or math.huge)
+	end
+
 	if a.backstab_objectivePathDistance ~= b.backstab_objectivePathDistance then
-		return (a.backstab_objectivePathDistance or 99) > (b.backstab_objectivePathDistance or 99)
+		return (a.backstab_objectivePathDistance or math.huge) > (b.backstab_objectivePathDistance or math.huge)
+	end
+
+	-- Treat objectives as closer than other rooms at the same effective distance.
+	if a.tags.objective ~= b.tags.objective then
+		return b.tags.objective
+	end
+
+	return a.roomIndex > b.roomIndex
+end
+
+-- Sort by reverse distance from objective path, then reverse distance from exit
+function compareCampaignRooms(a, b)
+	if a.backstab_objectivePathDistance ~= b.backstab_objectivePathDistance then
+		return (a.backstab_objectivePathDistance or math.huge) > (b.backstab_objectivePathDistance or math.huge)
 	end
 
 	if a.backstab_exitDistance ~= b.backstab_exitDistance then
-		return (a.backstab_exitDistance or 99) > (b.backstab_exitDistance or 99)
+		return (a.backstab_exitDistance or math.huge) > (b.backstab_exitDistance or math.huge)
 	end
 
 	-- Treat objectives as closer than other rooms at the same effective distance.
@@ -33,41 +51,61 @@ function simengine:init( ... )
 		return
 	end
 
-	local hasExit = false
+	local hasNormalExit = false
 	local hasObjectivePath = true
 	for _,room in ipairs(self._rooms) do
 		if room.backstab_objectivePathDistance then
 			hasObjectivePath = true
 		end
 		if room.tags.exit or room.tags.exit_vault then
-			hasExit = true
+			hasNormalExit = true
 			break
 		end
 	end
 
-	simlog("LOG_BACKSTAB", "SIMINIT hasExit=%s hasObjectivePath=%s", tostring(hasExit), tostring(hasObjectivePath))
-	if not hasExit and not hasObjectivePath then
-		-- No support for mid1/mid2/ending missions yet.
-		return
+	simlog("LOG_BACKSTAB", "SIMINIT hasNormalExit=%s hasObjectivePath=%s", tostring(hasNormalExit), tostring(hasObjectivePath))
+	self._backstab_startTurn = difficultyOptions.backstab_startTurn
+	local campaignMode = false
+	if self._backstab_startTurn and not hasNormalExit then
+		if not difficultyOptions.backstab_campaign or not difficultyOptions.backstab_campaign.mode then
+			return
+		elseif difficultyOptions.backstab_campaign.mode == "normal" then
+			campaignMode = false
+		elseif not hasObjectivePath then
+			simlog("BACKSTAB WARNING: disabling Royale Flush, no objective path")
+			return
+		else
+			campaignMode = difficultyOptions.backstab_campaign.mode
+		end
+
+		if difficultyOptions.backstab_campaign.turnDelay then
+			self._backstab_startTurn = self._backstab_startTurn + difficultyOptions.backstab_campaign.turnDelay
+		end
 	end
 
 	-- Assign each room to a backstabZone
-	local startTurn = difficultyOptions.backstab_startTurn
-	if startTurn and self._rooms then
+	if self._backstab_startTurn and self._rooms then
 		local roomsPerCycle = difficultyOptions.backstab_roomsPerCycle
 		local finalRooms = difficultyOptions.backstab_finalRooms
 
 		-- Make a shallow copy and sort by reverse distance from exit.
 		rooms = util.tdupe(self._rooms)
-		table.sort(rooms, compareRooms)
+		table.sort(rooms, campaignMode and compareCampaignRooms or compareRooms)
 		local maxBackstabZone
 		local lastID = util.tcount(self._rooms) - finalRooms
 		for i, room in ipairs( rooms ) do
 			local backstabZone = math.ceil(i / roomsPerCycle)
 			local limited = false
-			if room.backstab_objectivePathDistance == 0 then
-				backstabZone = backstabZone + 1
-				limited = true
+			if campaignMode and room.backstab_objectivePathDistance == 0 then
+				if campaignMode == "pathyellow" then
+					backstabZone = backstabZone + 1
+					limited = true
+				elseif campaignMode == "pathred" then
+					backstabZone = backstabZone + 1
+				else
+					-- No more penalty zones
+					break
+				end
 			end
 
 			simlog("LOG_BACKSTAB", "room=%s: toExit=%s toObjPath=%s zone=%s limit=%s",
@@ -88,7 +126,7 @@ function simengine:init( ... )
 
 		self._backstab_maxZone = maxBackstabZone
 
-		self._backstab_nextZoneTurn = startTurn
+		self._backstab_nextZoneTurn = self._backstab_startTurn
 		self:backstab_advanceZones()
 		self:getNPC():addMainframeAbility(self, "backstab_royaleFlush", nil, 0)
 	end
@@ -126,7 +164,7 @@ end
 function simengine:backstab_advanceZones(turnOffset)
 	local difficultyOptions = self:getParams().difficultyOptions
 	local turnsPerCycle = difficultyOptions.backstab_turnsPerCycle
-	local startTurn = difficultyOptions.backstab_startTurn
+	local startTurn = self._backstab_startTurn
 
 	local turn = math.ceil( (self:getTurnCount() + 1 + (turnOffset or 0)) / 2)
 

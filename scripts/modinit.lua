@@ -62,6 +62,28 @@ local function init(modApi)
 		enabled = false,
 	})
 
+	modApi:addGenerationOption("brCampaignMode", STRINGS.BACKSTAB.OPTIONS.BR_CAMPAIGN_MODE, STRINGS.BACKSTAB.OPTIONS.BR_CAMPAIGN_MODE, {
+		noUpdate = true,
+		values =
+		{
+			false, "pathsafe", "pathyellow", "pathred", "normal",
+		},
+		strings =
+		{
+			STRINGS.BACKSTAB.OPTIONS.DISABLED,
+			STRINGS.BACKSTAB.OPTIONS.BR_CAMPAIGN_MODE_PATHSAFE,
+			STRINGS.BACKSTAB.OPTIONS.BR_CAMPAIGN_MODE_PATHYELLOW,
+			STRINGS.BACKSTAB.OPTIONS.BR_CAMPAIGN_MODE_PATHRED,
+			STRINGS.BACKSTAB.OPTIONS.BR_CAMPAIGN_MODE_NORMAL,
+		},
+		value = "pathyellow",
+	})
+	modApi:addGenerationOption("brCampaignTurnDelay", STRINGS.BACKSTAB.OPTIONS.BR_CAMPAIGN_TURNDELAY, STRINGS.BACKSTAB.OPTIONS.BR_CAMPAIGN_TURNDELAY_TIP, {
+		noUpdate = true,
+		values = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+		value = 0,
+	})
+
 	local dataPath = modApi:getDataPath()
 	KLEIResourceMgr.MountPackage(dataPath .. "/images.kwad", "data")
 
@@ -108,6 +130,11 @@ local function load(modApi, options, params)
 		redPenalties.noSprint = options["brRedMp"].value > 0
 		redPenalties.disarm = options["brRedDisarm"].enabled
 		redPenalties.locate = options["brRedLocate"].enabled
+
+		local campaign = {}
+		params.backstab_campaign = campaign
+		campaign.mode = options["brCampaignMode"].value
+		campaign.turnDelay = options["brCampaignTurnDelay"].value
 	end
 
 	local npc_abilities = include( scriptPath .. "/npc_abilities" )
