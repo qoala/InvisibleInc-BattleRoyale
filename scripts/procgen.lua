@@ -136,19 +136,20 @@ function analyzeObjectivePath(cxt, exitRoom)
 		exitCell = cxt:cellInFrontOfUnit("yellow_level_console")
 	else
 		-- Pick a cell next to the elevator
-		exitCell = cxt:pickCell(function(c) return cxt:IS_EXIT_CELL(c) end)
+		_,_,exitCell = cxt:pickCell(cxt.IS_EXIT_CELL)
+		simlog("LOG_BACKSTAB", "Exit Cell: %d,%d", exitCell.x, exitCell.y)
 	end
 
 	local objectiveCells = {}
 	if exitRoom.tags.exit_final then
 		table.insert(objectiveCells, cxt:cellInFrontOfUnit("ending_jackin"))
-	elseif exitRoom.tags.exit_mid1 then
+	elseif exitRoom.tags.exit_mid_1 then
 		for _,unit in ipairs(cxt.units) do
-			if array.find(unit.unitData.tags, "switch_mid_1") ~= nil then
+			if unit.unitData and unit.unitData.tags and array.find(unit.unitData.tags, "switch_mid_1") ~= nil then
 				table.insert(objectiveCells, cxt:cellInFrontOfUnit(unit))
 			end
 		end
-	elseif exitRoom.tags.entry_mid2 then
+	elseif exitRoom.tags.entry_mid_2 then
 		table.insert(objectiveCells, cxt:cellInFrontOfUnit("research_security_processor"))
 	end
 
