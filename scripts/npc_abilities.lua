@@ -28,7 +28,6 @@ function huntAgent(sim, agent, hunters)
 	local closestGuard = simquery.findClosestUnit(sim:getNPC():getUnits(), x, y,
 		function(guard)
 			return (guard:getBrain() and not guard:isKO()
-			    and not guard:getTraits().camera_drone
 			    and guard:getBrain():getSituation().ClassType ~= simdefs.SITUATION_COMBAT
 			    and guard:getBrain():getSituation().ClassType ~= simdefs.SITUATION_FLEE
 				and not hunters[guard:getID()])
