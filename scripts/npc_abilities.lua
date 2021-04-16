@@ -5,6 +5,24 @@ local simquery = include("sim/simquery")
 
 local createDaemon = mainframe_common.createDaemon
 
+-- Copy of Brain:spawnInterest. Changes at -- BACKSTAB.
+function spawnInterest(unit, x, y, sense, reason, sourceUnit)
+	local senses = unit:getBrain():getSenses()
+	local interest = senses:addInterest(x, y, sense, reason, sourceUnit)
+	if interest then
+		interest.remember = true
+		-- BACKSTAB: Set grenadeHit if there's an existing grenadeHit interest on this tile.
+        --  So that the start-of-turn locator doesn't cause an enforcer to re-throw a grenade.
+		for _,other in ipairs(senses.interests) do
+			if other.grenadeHit and x == other.x and y == other.y then
+				interest.grenadeHit = true
+				break
+			end
+		end
+	end
+	unit:getSim():processReactions(unit)
+end
+
 function huntAgent(sim, agent, hunters)
 	local x,y = agent:getLocation()
 	local closestGuard = simquery.findClosestUnit(sim:getNPC():getUnits(), x, y,
@@ -17,7 +35,9 @@ function huntAgent(sim, agent, hunters)
 		end)
 	if closestGuard then
 		hunters[closestGuard:getID()] = agent
-		closestGuard:getBrain():spawnInterest(x, y, simdefs.SENSE_RADIO, simdefs.REASON_HUNTING, agent)
+		spawnInterest(closestGuard, x, y, simdefs.SENSE_RADIO, simdefs.REASON_HUNTING, agent)
+
+
     end
 end
 
