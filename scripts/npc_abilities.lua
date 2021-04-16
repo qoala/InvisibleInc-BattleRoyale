@@ -66,7 +66,8 @@ function royaleFlushApplyPenalties(sim, unit, penalties, hunters)
 		sim:dispatchEvent(simdefs.EV_UNIT_FLOAT_TXT,{txt=uiTxt,x=x,y=y,unit=unit,color={r=1/2,g=1,b=1,a=1}})
 	end
 
-	if penalties.locate then
+	-- No point in locating dead/pinned agents. KOed agents without a chaperone are fair game.
+	if penalties.locate and not unit:isNeutralized() then
 		huntAgent(sim, unit, hunters)
 	end
 end
