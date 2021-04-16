@@ -36,8 +36,6 @@ function huntAgent(sim, agent, hunters)
 	if closestGuard then
 		hunters[closestGuard:getID()] = agent
 		spawnInterest(closestGuard, x, y, simdefs.SENSE_RADIO, simdefs.REASON_HUNTING, agent)
-
-
     end
 end
 
@@ -67,12 +65,12 @@ function royaleFlushApplyPenalties(sim, unit, penalties, hunters)
 	end
 
 	-- No point in locating dead/pinned agents. KOed agents without a chaperone are fair game.
-	if penalties.locate and not unit:isNeutralized() then
+	if penalties.locate and penalties.locate ~= "end" and not unit:isNeutralized() then
 		huntAgent(sim, unit, hunters)
 	end
 end
 
-function royaleFlushHandleUnit(sim, unit, hunters)
+function royaleFlushUnitStartTurn(sim, unit, hunters)
 	if not simquery.isAgent(unit) or unit:getTraits().takenDrone then
 		return
 	end
@@ -98,6 +96,30 @@ function royaleFlushHandleUnit(sim, unit, hunters)
 	end
 end
 
+function royaleFlushUnitEndTurn(sim, unit, hunters)
+	if not simquery.isAgent(unit) or unit:getTraits().takenDrone then
+		return
+	end
+	local penalties = sim:getParams().difficultyOptions.backstab_redPenalties
+	if penalties.locate ~= "end" then
+	    return
+	end
+
+	local x,y = unit:getLocation()
+	if not x then
+		return
+	end
+	local cell = sim:getCell(x, y)
+	local simRoom = sim._mutableRooms[cell.procgenRoom.roomIndex]
+	if not simRoom or not simRoom.backstabState then
+		return
+	elseif simRoom.backstabState == 0 then
+		if penalties.locate == "end" and not unit:isNeutralized() then
+			huntAgent(sim, unit, hunters)
+		end
+	end
+end
+
 function royaleFlushZoneDesc(penalties)
 	local strings = STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH
 
@@ -107,14 +129,18 @@ function royaleFlushZoneDesc(penalties)
 	elseif penalties.mp and penalties.mp >= 0 then
 		desc = util.sformat(strings.ZONE_SLOW_DESC, penalties.mp)
 	else
-		if penalties.locate then
+		if penalties.locate == "end" then
+			return strings.ZONE_LOCATEENDONLY_DESC
+		elseif penalties.locate then
 			return strings.ZONE_LOCATEONLY_DESC
 		else
 			return strings.ZONE_WARNING_DESC
 		end
 	end
 
-	if penalties.locate then
+	if penalties.locate == "end" then
+		return desc .. " " .. strings.ZONE_LOCATEEND_DESC
+	elseif penalties.locate then
 		return desc .. " " .. strings.ZONE_LOCATE_DESC
 	else
 		return desc
@@ -171,11 +197,10 @@ local npc_abilities =
 		end,
 
 		onTrigger = function( self, sim, evType, evData, userUnit )
-			if evType == simdefs.TRG_END_TURN and sim:getCurrentPlayer():isNPC() then
-			elseif evType == simdefs.TRG_START_TURN and sim:getCurrentPlayer():isPC() then
+			if evType == simdefs.TRG_START_TURN and sim:getCurrentPlayer():isPC() then
 				local hunters = {}
 				for _,unit in ipairs(sim:getPC():getUnits()) do
-					royaleFlushHandleUnit(sim, unit, hunters)
+					royaleFlushUnitStartTurn(sim, unit, hunters)
 				end
 
 				if sim:backstab_advanceZones() then
@@ -188,6 +213,11 @@ local npc_abilities =
 					self.turns = nextTurns
 				else
 					self.turns = sim:backstab_turnsUntilNextZone(0)
+				end
+			elseif evType == simdefs.TRG_END_TURN and sim:getCurrentPlayer():isPC() then
+				local hunters = {}
+				for _,unit in ipairs(sim:getPC():getUnits()) do
+					royaleFlushUnitEndTurn(sim, unit, hunters)
 				end
 			end
 		end,

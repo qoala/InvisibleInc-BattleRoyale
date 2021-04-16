@@ -59,7 +59,9 @@ local function init(modApi)
 	})
 	modApi:addGenerationOption("brRedLocate", STRINGS.BACKSTAB.OPTIONS.BR_REDLOCATE, STRINGS.BACKSTAB.OPTIONS.BR_REDLOCATE_TIP, {
 		noUpdate = true,
-		enabled = false,
+		values = {false, "start", "end"},
+		strings = {STRINGS.BACKSTAB.OPTIONS.DISABLED, STRINGS.BACKSTAB.OPTIONS.LOCATE_START, STRINGS.BACKSTAB.OPTIONS.LOCATE_END},
+		value = "start",
 	})
 
 	local dataPath = modApi:getDataPath()
@@ -106,7 +108,7 @@ local function load(modApi, options, params)
 		redPenalties.mp = options["brRedMp"].value
 		redPenalties.noSprint = options["brRedMp"].value > 0
 		redPenalties.disarm = options["brRedDisarm"].enabled
-		redPenalties.locate = options["brRedLocate"].enabled
+		redPenalties.locate = options["brRedLocate"].value
 	end
 
 	local npc_abilities = include( scriptPath .. "/npc_abilities" )
