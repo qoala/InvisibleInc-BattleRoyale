@@ -55,7 +55,7 @@ function simengine:init( ... )
 		local lastID = util.tcount(self._rooms) - finalRooms
 		for i, room in ipairs( rooms ) do
 			self._mutableRooms[room.roomIndex].backstabZone = backstabZone
-			-- simlog("DBGBACKSTAB %s: %s, %s", room.roomIndex, room.backstab_exitDistance, backstabZone)
+			simlog("LOG_BACKSTAB", "room=%s toExit=%s zone=%s", room.roomIndex, room.backstab_exitDistance, backstabZone)
 
 			if i >= lastID then
 				break
@@ -66,8 +66,8 @@ function simengine:init( ... )
 		end
 
 		self._backstab_maxZone = backstabZone
-
 		self._backstab_nextZoneTurn = startTurn
+		self._backstab_nextZone = nil
 		self:backstab_advanceZones()
 		self:getNPC():addMainframeAbility(self, "backstab_royaleFlush", nil, 0)
 	end
@@ -107,13 +107,14 @@ function simengine:backstab_advanceZones(turnOffset)
 
 	local turn = math.ceil( (self:getTurnCount() + 1 + (turnOffset or 0)) / 2)
 
-	if turn < startTurn or (self._backstab_nextZone and self._backstab_nextZone > self._backstab_maxZone) then
-		-- simlog("DBGBACKSTAB ADVANCE: %s start=%s", turn, startTurn)
-		return false
+	-- First zone is marked 1. On startTurn, the next zone is 0 with only warnings being marked into rooms.
+	local nextZone = math.floor((turn - startTurn) / turnsPerCycle)
+	if nextZone < 0 then
+		nextZone = nil
+	elseif nextZone > self._backstab_maxZone then
+		nextZone = self._backstab_maxZone
 	end
 
-	-- First zone is at 1. On startTurn, the next cycle is 0 with only warnings being marked into rooms.
-	local nextZone = math.floor((turn - startTurn) / turnsPerCycle)
 	if nextZone ~= self._backstab_nextZone then
 		updateRooms(self, nextZone - 1)
 		self._backstab_nextZone = nextZone
@@ -121,7 +122,7 @@ function simengine:backstab_advanceZones(turnOffset)
 
 		self:dispatchEvent("EV_BACKSTAB_REFRESHOVERLAY", {})
 
-		-- simlog("DBGBACKSTAB ADVANCE: %s next=%s", turn, self._backstab_nextZone)
+		simlog("LOG_BACKSTAB", "ADVANCE: turn=%s next=%s", turn, self._backstab_nextZone)
 		return true
 	end
 	return false
