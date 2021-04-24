@@ -183,9 +183,10 @@ local npc_abilities =
 
 		onSpawnAbility = function( self, sim, player )
 			updateLegacyParams(sim:getParams().difficultyOptions)
+			local stabOptions = sim:getParams().difficultyOptions.backstab_stab or {}
+			self._reverseZones = stabOptions.reverseZones
 
 			self.turns = sim:backstab_turnsUntilNextZone()
-			self.shouldCheckBackstab = true
 
 			sim:addTrigger( simdefs.TRG_START_TURN, self )
 			sim:addTrigger( simdefs.TRG_END_TURN, self )
@@ -203,10 +204,10 @@ local npc_abilities =
 					royaleFlushUnitStartTurn(sim, unit, hunters)
 				end
 
-				if self.shouldCheckBackstab and sim:backstab_isBackstabComplete() then
+				if self._reverseZones and sim:backstab_isBackstabComplete() then
 					simlog("LOG_BACKSTAB", "BACKSTAB COMPLETE")
-					sim:backstab_reverse(2)
-					self.shouldCheckBackstab = false
+					sim:backstab_reverse(self._reverseZones)
+					self._reverseZones = false
 
 					self.turns = sim:backstab_turnsUntilNextZone(0)
 					sim:dispatchEvent( simdefs.EV_HUD_REFRESH, {} )

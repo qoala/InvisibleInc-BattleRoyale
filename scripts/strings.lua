@@ -25,6 +25,9 @@ local MOD_STRINGS =
 		BR_REDLOCATE = "BATTLE ROYALE RED ZONE: LOCATE AGENT",
 		BR_REDLOCATE_TIP = "<c:FF8411>RED ZONE: LOCATE AGENT</c>\nNEXT TURN: agents ending in the red zone will be located at the start of their next turn. (Recommended)\nIMMEDIATELY: agents ending in the red zone will be located immediately at the end of their turn.",
 
+		STAB_REVERSEZONES = "BACKSTAB: REVERSE ZONES",
+		STAB_REVERSEZONES_TIP = "<c:FF8411>REVERSE ZONES</c>When only 1 agent is left standing, reverse Royale Flush by this many zones. Triggers once per mission.",
+
 		LOCATE_START = "NEXT TURN",
 		LOCATE_END = "IMMEDIATELY",
 	},

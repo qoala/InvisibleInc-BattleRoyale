@@ -64,6 +64,13 @@ local function init(modApi)
 		value = "start",
 	})
 
+	modApi:addGenerationOption("stabReverseZones", STRINGS.BACKSTAB.OPTIONS.STAB_REVERSEZONES, STRINGS.BACKSTAB.OPTIONS.STAB_REVERSEZONES_TIP, {
+		noUpdate = true,
+		values = {false, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+		strings = {STRINGS.BACKSTAB.OPTIONS.DISABLED, "1", "2 (Recommended)", "3", "4", "5", "6", "7", "8", "9"},
+		value = false,
+	})
+
 	local dataPath = modApi:getDataPath()
 	KLEIResourceMgr.MountPackage(dataPath .. "/images.kwad", "data")
 
@@ -109,6 +116,10 @@ local function load(modApi, options, params)
 		redPenalties.noSprint = options["brRedMp"].value > 0
 		redPenalties.disarm = options["brRedDisarm"].enabled
 		redPenalties.locate = options["brRedLocate"].value
+
+		local stab = {}
+		params.backstab_stab = stab
+		stab.reverseZones = options["stabReverseZones"].value
 	end
 
 	local npc_abilities = include( scriptPath .. "/npc_abilities" )
