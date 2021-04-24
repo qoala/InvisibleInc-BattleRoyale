@@ -185,6 +185,7 @@ local npc_abilities =
 			updateLegacyParams(sim:getParams().difficultyOptions)
 
 			self.turns = sim:backstab_turnsUntilNextZone()
+			self.shouldCheckBackstab = true
 
 			sim:addTrigger( simdefs.TRG_START_TURN, self )
 			sim:addTrigger( simdefs.TRG_END_TURN, self )
@@ -201,6 +202,19 @@ local npc_abilities =
 				for _,unit in ipairs(sim:getPC():getUnits()) do
 					royaleFlushUnitStartTurn(sim, unit, hunters)
 				end
+
+				if self.shouldCheckBackstab and sim:backstab_isBackstabComplete() then
+					simlog("LOG_BACKSTAB", "BACKSTAB COMPLETE")
+					sim:backstab_reverse(2)
+					self.shouldCheckBackstab = false
+
+					self.turns = sim:backstab_turnsUntilNextZone(0)
+					sim:dispatchEvent( simdefs.EV_HUD_REFRESH, {} )
+
+					local daemonStrings = STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH
+					sim:dispatchEvent( simdefs.EV_SHOW_REVERSE_DAEMON, { name = daemonStrings.REVERSE_NAME, icon=self.icon, txt = daemonStrings.REVERSE_DESC } )
+				end
+
 
 				if sim:backstab_advanceZones() then
 					self.turns = 0

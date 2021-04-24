@@ -65,6 +65,7 @@ function simengine:init( ... )
 			end
 		end
 
+		self._backstab_startTurn = startTurn
 		self._backstab_maxZone = backstabZone
 		self._backstab_nextZoneTurn = startTurn
 		self._backstab_nextZone = nil
@@ -87,7 +88,9 @@ end
 
 function updateRooms(sim, zone)
 	for _, simRoom in ipairs( sim._mutableRooms ) do
-		if simRoom.backstabZone == zone then
+		if not simRoom.backstabZone or not zone then
+			simRoom.backstabState = nil
+		elseif simRoom.backstabZone <= zone then
 			-- RED
 			simRoom.backstabState = 0
 		elseif simRoom.backstabZone == zone + 1 then
@@ -96,6 +99,8 @@ function updateRooms(sim, zone)
 		elseif simRoom.backstabZone == zone + 2 then
 			-- BLUE
 			simRoom.backstabState = 2
+		else
+			simRoom.backstabState = nil
 		end
 	end
 end
@@ -103,7 +108,7 @@ end
 function simengine:backstab_advanceZones(turnOffset)
 	local difficultyOptions = self:getParams().difficultyOptions
 	local turnsPerCycle = difficultyOptions.backstab_turnsPerCycle
-	local startTurn = difficultyOptions.backstab_startTurn
+	local startTurn = self._backstab_startTurn
 
 	local turn = math.ceil( (self:getTurnCount() + 1 + (turnOffset or 0)) / 2)
 
@@ -112,18 +117,58 @@ function simengine:backstab_advanceZones(turnOffset)
 	if nextZone < 0 then
 		nextZone = nil
 	elseif nextZone > self._backstab_maxZone then
-		nextZone = self._backstab_maxZone
+		nextZone = self._backstab_maxZone + 1
 	end
 
 	if nextZone ~= self._backstab_nextZone then
-		updateRooms(self, nextZone - 1)
+		if nextZone then
+			updateRooms(self, nextZone - 1)
+			self._backstab_nextZoneTurn = startTurn + (nextZone + 1) * turnsPerCycle
+		else
+			updateRooms(self, nil)
+			self._backstab_nextZoneTurn = startTurn
+		end
 		self._backstab_nextZone = nextZone
-		self._backstab_nextZoneTurn = startTurn + (nextZone + 1) * turnsPerCycle
 
 		self:dispatchEvent("EV_BACKSTAB_REFRESHOVERLAY", {})
 
-		simlog("LOG_BACKSTAB", "ADVANCE: turn=%s next=%s", turn, self._backstab_nextZone)
+		simlog("LOG_BACKSTAB", "ADVANCE: turn=%s next=%s", turn, tostring(self._backstab_nextZone))
 		return true
 	end
 	return false
+end
+
+-- Called for events that push back the Royale Flush zone advancement
+function simengine:backstab_reverse(cycleCount)
+	if self._backstab_nextZone <= self._backstab_maxZone then
+		local difficultyOptions = self:getParams().difficultyOptions
+		local turnsPerCycle = difficultyOptions.backstab_turnsPerCycle
+		self._backstab_startTurn = self._backstab_startTurn + cycleCount * turnsPerCycle
+	else
+		local difficultyOptions = self:getParams().difficultyOptions
+		local turnsPerCycle = difficultyOptions.backstab_turnsPerCycle
+
+		local turn = math.ceil((self:getTurnCount() + 1) / 2)
+
+		self._backstab_startTurn = turn - (self._backstab_maxZone - 1) * turnsPerCycle
+	end
+
+	self:backstab_advanceZones()
+end
+
+function simengine:backstab_isBackstabComplete()
+	local downCount = 0
+	local standingCount = 0
+	for _, unit in ipairs(self:getPC():getUnits()) do
+		if unit:hasAbility("escape") then
+			if unit:isNeutralized() then
+				downCount = downCount + 1
+			else
+				standingCount = standingCount + 1
+			end
+		end
+	end
+
+	simlog("LOG_BACKSTAB", "CHECK_BACKSTAB down=%d standing=%d", downCount, standingCount)
+	return downCount > 0 and standingCount == 1
 end
