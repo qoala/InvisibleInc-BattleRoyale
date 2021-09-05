@@ -48,8 +48,22 @@ function simengine:init( ... )
 		local roomsPerCycle = difficultyOptions.backstab_roomsPerCycle
 		local finalRooms = difficultyOptions.backstab_finalRooms
 
-		-- Make a shallow copy and sort by reverse distance from exit.
-		rooms = util.tdupe(self._rooms)
+		-- Make a shallow copy, filtering out "always rooms", ...
+		rooms = {}
+		for _, room in ipairs(self._rooms) do
+			if room.tags and room.tags.backstab_alwaysSafe then
+				self._mutableRooms[room.roomIndex].backstabZone = nil
+				simlog("LOG_BACKSTAB", "room=%s alwaysSafe zone=nil", room.roomIndex)
+			elseif room.backstab_alwaysRed or (room.tags and room.tags.backstab_alwaysRed) or room.backstab_exitDistance>=1000 then
+				-- HallwayHell's external guard-entry rooms lock in exitDistance==1000, make them alwaysRed.
+				self._mutableRooms[room.roomIndex].backstabZone = nil
+				self._mutableRooms[room.roomIndex].backstabAlwaysRed = true
+				simlog("LOG_BACKSTAB", "room=%s alwaysRed zone=always", room.roomIndex)
+			else
+				table.insert(rooms, room)
+			end
+		end
+		-- ...and sort by reverse distance from exit.
 		table.sort(rooms, compareRooms)
 		local backstabZone = 1
 		local lastID = util.tcount(self._rooms) - finalRooms
@@ -68,7 +82,7 @@ function simengine:init( ... )
 		self._backstab_startTurn = startTurn
 		self._backstab_maxZone = backstabZone
 		self._backstab_nextZoneTurn = startTurn
-		self._backstab_nextZone = nil
+		self._backstab_nextZone = -100  -- Always update the first time.
 		self:backstab_advanceZones()
 		self:getNPC():addMainframeAbility(self, "backstab_royaleFlush", nil, 0)
 	end
@@ -88,7 +102,10 @@ end
 
 function updateRooms(sim, zone)
 	for _, simRoom in ipairs( sim._mutableRooms ) do
-		if not simRoom.backstabZone or not zone then
+		if simRoom.backstabAlwaysRed then
+			-- RED
+			simRoom.backstabState = 0
+		elseif not simRoom.backstabZone or not zone then
 			simRoom.backstabState = nil
 		elseif simRoom.backstabZone <= zone then
 			-- RED
