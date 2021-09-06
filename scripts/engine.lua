@@ -50,6 +50,7 @@ function simengine:init( ... )
 
 		-- Make a shallow copy, filtering out "always rooms", ...
 		rooms = {}
+		roomCount = 0
 		for _, room in ipairs(self._rooms) do
 			if room.tags and room.tags.backstab_alwaysSafe then
 				self._mutableRooms[room.roomIndex].backstabZone = nil
@@ -61,12 +62,15 @@ function simengine:init( ... )
 				simlog("LOG_BACKSTAB", "room=%s alwaysRed zone=always", room.roomIndex)
 			else
 				table.insert(rooms, room)
+				roomCount = roomCount + 1
 			end
 		end
 		-- ...and sort by reverse distance from exit.
 		table.sort(rooms, compareRooms)
+
+		-- and assign them to backstabZone IDs in order.
 		local backstabZone = 1
-		local lastID = util.tcount(self._rooms) - finalRooms
+		local lastID = roomCount - finalRooms
 		for i, room in ipairs( rooms ) do
 			self._mutableRooms[room.roomIndex].backstabZone = backstabZone
 			simlog("LOG_BACKSTAB", "room=%s toExit=%s zone=%s", room.roomIndex, room.backstab_exitDistance, backstabZone)
