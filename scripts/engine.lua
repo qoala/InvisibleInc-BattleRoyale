@@ -193,3 +193,17 @@ function simengine:backstab_isBackstabComplete()
 	simlog("LOG_BACKSTAB", "CHECK_BACKSTAB down=%d standing=%d", downCount, standingCount)
 	return downCount > 0 and standingCount == 1
 end
+
+-- ===
+
+local oldStartDaemonQueue = simengine.startDaemonQueue
+function simengine:startDaemonQueue()
+	self:triggerEvent("BACKSTAB_attackQueueStart")
+	oldStartDaemonQueue(self)
+end
+
+local oldProcessDaemonQueue = simengine.processDaemonQueue
+function simengine:processDaemonQueue()
+	oldProcessDaemonQueue(self)
+	self:triggerEvent("BACKSTAB_attackQueueProcess")
+end

@@ -27,20 +27,24 @@ local function spawnInterest(unit, x, y, sense, reason, sourceUnit)
 	unit:getSim():processReactions(unit)
 end
 
-local function chaseCell(sim, x, y, agent)
+local function chaseCell(sim, x, y, agent, hunters)
+	hunters = hunters or {}
 	local closestGuard = simquery.findClosestUnit(sim:getNPC():getUnits(), x, y,
 		function(guard)
 			return (guard:getBrain() and not guard:isKO()
+				and not guard:getTraits().noInterestDistraction
 			    and guard:getBrain():getSituation().ClassType ~= simdefs.SITUATION_COMBAT
-			    and guard:getBrain():getSituation().ClassType ~= simdefs.SITUATION_FLEE)
+			    and guard:getBrain():getSituation().ClassType ~= simdefs.SITUATION_FLEE
+				and not hunters[guard:getID()])
 		end)
 	if closestGuard then
 		spawnInterest(closestGuard, x, y, simdefs.SENSE_RADIO, simdefs.REASON_CAMERA, agent)
 	end
+	return closestGuard
 end
-local function chaseAgent(sim, agent)
+local function chaseAgent(sim, agent, hunters)
 	local x,y = agent:getLocation()
-	return chaseCell(sim, x, y, agent)
+	return chaseCell(sim, x, y, agent, hunters)
 end
 
 local function huntCell(sim, x, y, agent, hunters)
@@ -48,6 +52,8 @@ local function huntCell(sim, x, y, agent, hunters)
 	local closestGuard = simquery.findClosestUnit(sim:getNPC():getUnits(), x, y,
 		function(guard)
 			return (guard:getBrain() and not guard:isKO()
+				and not guard:getTraits().noInterestDistraction
+				and not guard:getTraits().pacifist
 			    and guard:getBrain():getSituation().ClassType ~= simdefs.SITUATION_COMBAT
 			    and guard:getBrain():getSituation().ClassType ~= simdefs.SITUATION_FLEE
 				and not hunters[guard:getID()])
@@ -56,6 +62,7 @@ local function huntCell(sim, x, y, agent, hunters)
 		hunters[closestGuard:getID()] = agent
 		spawnInterest(closestGuard, x, y, simdefs.SENSE_RADIO, simdefs.REASON_HUNTING, agent)
     end
+	return closestGuard
 end
 local function huntAgent(sim, agent, hunters)
 	local x,y = agent:getLocation()
@@ -223,6 +230,33 @@ local function royaleFlushSafe(sim, unit, safeUnit)
 		chaseAgent(sim, unit)
 	end
 end
+local function royaleFlushAttacked(sim, attackedUnit, x,y, hunters)
+	-- Unlike other triggers, this one triggers on the enemy units, not the player units.
+	if not x and attackedUnit then
+		x,y = attackedUnit:getLocation()
+	end
+	if not x then
+		return
+	end
+
+	local cell = sim:getCell(x, y)
+	local simRoom = sim._mutableRooms[cell.procgenRoom.roomIndex]
+	local penalties
+	if not simRoom or not simRoom.backstabState then
+		return
+	elseif simRoom.backstabState == 0 then
+		penalties = sim:getParams().difficultyOptions.backstab_redPenalties
+	elseif simRoom.backstabState == 1 then
+		penalties = sim:getParams().difficultyOptions.backstab_yellowPenalties
+	end
+
+	local hunter
+	if penalties.attackAlarm == "a" then
+		hunter = huntCell(sim, x,y, attackedUnit, hunters)
+	elseif penalties.attackAlarm == "n" then
+		hunter = chaseCell(sim, x,y, attackedUnit, hunters)
+	end
+end
 
 local function triggeredPenaltiesDesc(doors, safes, attacks, alerting)
 	local strings = STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH
@@ -355,6 +389,10 @@ local npc_abilities =
 			sim:addTrigger( simdefs.TRG_END_TURN, self )
 			sim:addTrigger( simdefs.TRG_UNIT_USEDOOR, self )
 			sim:addTrigger( simdefs.TRG_SAFE_LOOTED, self )
+			sim:addTrigger( simdefs.TRG_UNIT_KILLED, self )
+			sim:addTrigger( simdefs.TRG_UNIT_KO, self )
+			sim:addTrigger( "BACKSTAB_attackQueueStart", self )
+			sim:addTrigger( "BACKSTAB_attackQueueProcess", self )
 		end,
 
 		onDespawnAbility = function( self, sim )
@@ -362,6 +400,10 @@ local npc_abilities =
 			sim:removeTrigger( simdefs.TRG_END_TURN, self )
 			sim:removeTrigger( simdefs.TRG_UNIT_USEDOOR, self )
 			sim:removeTrigger( simdefs.TRG_SAFE_LOOTED, self )
+			sim:removeTrigger( simdefs.TRG_UNIT_KILLED, self )
+			sim:removeTrigger( simdefs.TRG_UNIT_KO, self )
+			sim:removeTrigger( "BACKSTAB_attackQueueStart", self )
+			sim:removeTrigger( "BACKSTAB_attackQueueProcess", self )
 		end,
 
 		onTrigger = function( self, sim, evType, evData, userUnit )
@@ -404,6 +446,30 @@ local npc_abilities =
 				royaleFlushDoor(sim, evData.unit, evData.cell, evData.tocell)
 			elseif evType == simdefs.TRG_SAFE_LOOTED and evData.targetUnit:getTraits().safeUnit and evData.unit and evData.unit:isPC() then
 				royaleFlushSafe(sim, evData.unit, evData.targetUnit)
+			elseif evType == simdefs.TRG_UNIT_KO and evData.ticks and evData.unit and evData.unit:isNPC() then
+				if self._attackQueue then
+					local x,y = evData.unit:getLocation()
+					table.insert(self._attackQueue, {unitID=evData.unit:getID(), x=x, y=y})
+				else
+					royaleFlushAttacked(sim, evData.unit)
+				end
+			elseif evType == simdefs.TRG_UNIT_KILLED and evData.unit and evData.unit:getTraits().isGuard and evData.corpse then
+				if self._attackQueue then
+					local x,y = evData.corpse:getLocation()
+					table.insert(self._attackQueue, {unitID=evData.corpse:getID(), x=x, y=y})
+				else
+					royaleFlushAttacked(sim, evData.corpse)
+				end
+			elseif evType == "BACKSTAB_attackQueueStart" then
+				self._attackQueue = {}
+			elseif evType == "BACKSTAB_attackQueueProcess" then
+				local queue = self._attackQueue
+				self._attackQueue = nil
+				local hunters = {}
+				for _,entry in ipairs(queue) do
+					local unit = sim:getUnit(entry.unitID)
+					royaleFlushAttacked(sim, unit, entry.x, entry.y, hunters)
+				end
 			end
 		end,
 
