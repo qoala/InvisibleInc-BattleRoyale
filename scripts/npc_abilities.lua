@@ -6,7 +6,7 @@ local simquery = include("sim/simquery")
 local createDaemon = mainframe_common.createDaemon
 
 -- Copy of Brain:spawnInterest. Changes at -- BACKSTAB.
-function spawnInterest(unit, x, y, sense, reason, sourceUnit)
+local function spawnInterest(unit, x, y, sense, reason, sourceUnit)
 	local senses = unit:getBrain():getSenses()
 	local interest = senses:addInterest(x, y, sense, reason, sourceUnit)
 	if interest then
@@ -23,7 +23,7 @@ function spawnInterest(unit, x, y, sense, reason, sourceUnit)
 	unit:getSim():processReactions(unit)
 end
 
-function huntAgent(sim, agent, hunters)
+local function huntAgent(sim, agent, hunters)
 	local x,y = agent:getLocation()
 	local closestGuard = simquery.findClosestUnit(sim:getNPC():getUnits(), x, y,
 		function(guard)
@@ -38,7 +38,7 @@ function huntAgent(sim, agent, hunters)
     end
 end
 
-function royaleFlushApplyPenalties(sim, unit, penalties, hunters)
+local function royaleFlushApplyPenalties(sim, unit, penalties, hunters)
 	local uiTxt = nil
 	if penalties.mp and penalties.mp > 0 then
 		local mp = unit:getTraits().mp
@@ -69,7 +69,7 @@ function royaleFlushApplyPenalties(sim, unit, penalties, hunters)
 	end
 end
 
-function royaleFlushUnitStartTurn(sim, unit, hunters)
+local function royaleFlushUnitStartTurn(sim, unit, hunters)
 	if not simquery.isAgent(unit) or unit:getTraits().takenDrone then
 		return
 	end
@@ -95,7 +95,7 @@ function royaleFlushUnitStartTurn(sim, unit, hunters)
 	end
 end
 
-function royaleFlushUnitEndTurn(sim, unit, hunters)
+local function royaleFlushUnitEndTurn(sim, unit, hunters)
 	if not simquery.isAgent(unit) or unit:getTraits().takenDrone then
 		return
 	end
@@ -119,31 +119,87 @@ function royaleFlushUnitEndTurn(sim, unit, hunters)
 	end
 end
 
-function royaleFlushZoneDesc(penalties)
+local function triggeredPenaltiesDesc(doors, safes, attacks, alerting)
 	local strings = STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH
-
-	local desc
-	if penalties.disarm then
-		desc = util.sformat(strings.ZONE_DISARM_DESC, penalties.mp)
-	elseif penalties.mp and penalties.mp >= 0 then
-		desc = util.sformat(strings.ZONE_SLOW_DESC, penalties.mp)
-	else
-		if penalties.locate == "end" then
-			return strings.ZONE_LOCATEENDONLY_DESC
-		elseif penalties.locate then
-			return strings.ZONE_LOCATEONLY_DESC
+	local trigger
+	if doors then
+		if safes then
+			if attacks then
+				trigger = strings.ZONE_ALARM_TRIGGER.DOOR_SAFE_ATTACK
+			else
+				trigger = strings.ZONE_ALARM_TRIGGER.DOOR_SAFE
+			end
 		else
-			return strings.ZONE_WARNING_DESC
+			if attacks then
+				trigger = strings.ZONE_ALARM_TRIGGER.DOOR_ATTACK
+			else
+				trigger = strings.ZONE_ALARM_TRIGGER.DOOR
+			end
+		end
+	else
+		if safes then
+			if attacks then
+				trigger = strings.ZONE_ALARM_TRIGGER.SAFE_ATTACK
+			else
+				trigger = strings.ZONE_ALARM_TRIGGER.SAFE
+			end
+		else
+			if attacks then
+				trigger = strings.ZONE_ALARM_TRIGGER.ATTACK
+			else
+				return nil
+			end
 		end
 	end
 
-	if penalties.locate == "end" then
-		return desc .. " " .. strings.ZONE_LOCATEEND_DESC
-	elseif penalties.locate then
-		return desc .. " " .. strings.ZONE_LOCATE_DESC
-	else
-		return desc
+	local effect = alerting and strings.ZONE_ALARM_EFFECT.ALERT or strings.ZONE_ALARM_EFFECT.NOTIFY 
+
+	return util.sformat(strings.ZONE_ALARM_TEMPLATE, trigger, effect)
+end
+
+local function royaleFlushZoneDesc(penalties)
+	local strings = STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH
+
+	local descs = {}
+	local desc
+
+	desc = triggeredPenaltiesDesc(penalties.doorAlarm == "n", penalties.safeAlarm == "n", penalties.attackAlarm == "n", false)
+	if desc then
+		table.insert(descs, desc)
 	end
+	desc = triggeredPenaltiesDesc(penalties.doorAlarm == "a", penalties.safeAlarm == "a", penalties.attackAlarm == "a", true)
+	if desc then
+		table.insert(descs, desc)
+	end
+
+	if penalties.disarm then
+		desc = util.sformat(strings.ZONE_DISARM_DESC, penalties.mp) .. " "
+	elseif penalties.mp and penalties.mp > 0 then
+		desc = util.sformat(strings.ZONE_SLOW_DESC, penalties.mp) .. " "
+	else
+		-- No other per-turn penalties
+		if penalties.locate == "end" then
+			table.insert(descs, strings.ZONE_LOCATEENDONLY_DESC)
+		elseif penalties.locate then
+			table.insert(descs, strings.ZONE_LOCATEONLY_DESC)
+		elseif #descs == 0 then
+			-- No penalties found
+			return {strings.ZONE_WARNING_DESC}
+		end
+		return descs
+	end
+
+	-- Per-turn penalties, and...
+	if penalties.locate == "end" then
+		desc = desc .. strings.ZONE_LOCATEEND_DESC
+		table.insert(descs, desc)
+	elseif penalties.locate then
+		desc = desc .. strings.ZONE_LOCATE_DESC
+		table.insert(descs, desc)
+	else
+		table.insert(descs, desc)
+	end
+	return descs
 end
 
 local function updateLegacyParams(difficultyOptions)
@@ -247,14 +303,21 @@ local npc_abilities =
 			local desc = util.sformat(self.desc, difficultyOptions.backstab_turnsPerCycle)
 			section:addAbility( self.shortdesc, desc, "gui/icons/action_icons/Action_icon_Small/icon-item_shoot_small.png" )
 
-			local redDesc = royaleFlushZoneDesc(difficultyOptions.backstab_redPenalties)
-			section:addAbility( strings.RED_DESC_TITLE, redDesc, "gui/icons/action_icons/Action_icon_Small/actionicon_noentry.png" )
-
-			local yellowDesc = royaleFlushZoneDesc(difficultyOptions.backstab_yellowPenalties)
-			section:addAbility( strings.YELLOW_DESC_TITLE, yellowDesc, "gui/icons/action_icons/Action_icon_Small/actionicon_noentry.png" )
-
 			local blueDesc = strings.ZONE_WARNING_DESC
 			section:addAbility( strings.BLUE_DESC_TITLE, blueDesc, "gui/icons/action_icons/Action_icon_Small/actionicon_noentry.png" )
+
+			local title
+			title = strings.YELLOW_DESC_TITLE
+			for _,yellowDesc in ipairs(royaleFlushZoneDesc(difficultyOptions.backstab_yellowPenalties)) do
+				section:addAbility( title, yellowDesc, "gui/icons/action_icons/Action_icon_Small/actionicon_noentry.png" )
+				title = util.sformat(strings.CONTINUED_TITLE, title)
+			end
+
+			title = strings.RED_DESC_TITLE
+			for _,redDesc in ipairs(royaleFlushZoneDesc(difficultyOptions.backstab_redPenalties)) do
+				section:addAbility( title, redDesc, "gui/icons/action_icons/Action_icon_Small/actionicon_noentry.png" )
+				title = util.sformat(strings.CONTINUED_TITLE, title)
+			end
 
 			if self.dlcFooter then
 				section:addFooter(self.dlcFooter[1],self.dlcFooter[2])

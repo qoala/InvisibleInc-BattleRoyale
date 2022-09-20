@@ -18,57 +18,151 @@ local function init(modApi)
 	rawset(_G,"SCRIPT_PATHS",rawget(_G,"SCRIPT_PATHS") or {})
 	SCRIPT_PATHS.backstab_protocol = scriptPath
 
-	modApi:addGenerationOption("brStartTurn", STRINGS.BACKSTAB.OPTIONS.BR_STARTTURN, STRINGS.BACKSTAB.OPTIONS.BR_STARTTURN_TIP, {
-		noUpdate = true,
-		values = {false, 1, 2, 3, 4, 5, 6, 10, 15, 20},
-		strings = {STRINGS.BACKSTAB.OPTIONS.DISABLED, "1", "2", "3", "4", "5", "6", "10", "15", "20"},
-		value = 3,
-	})
-	modApi:addGenerationOption("brRoomsPerCycle", STRINGS.BACKSTAB.OPTIONS.BR_ZONESIZE, STRINGS.BACKSTAB.OPTIONS.BR_ZONESIZE_TIP, {
-		noUpdate = true,
-		values = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
-		value = 2,
-	})
-	modApi:addGenerationOption("brTurnsPerCycle", STRINGS.BACKSTAB.OPTIONS.BR_ZONETURNS, STRINGS.BACKSTAB.OPTIONS.BR_ZONETURNS_TIP, {
-		noUpdate = true,
-		values = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
-		value = 3,
-	})
-	modApi:addGenerationOption("brFinalRooms", STRINGS.BACKSTAB.OPTIONS.BR_FINALSIZE, STRINGS.BACKSTAB.OPTIONS.BR_FINALSIZE_TIP, {
-		noUpdate = true,
-		values = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
-		value = 1,
-	})
-	modApi:addGenerationOption("brYellowMp", STRINGS.BACKSTAB.OPTIONS.BR_YELLOWMP, STRINGS.BACKSTAB.OPTIONS.BR_YELLOWMP_TIP, {
-		noUpdate = true,
-		values = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
-		value = 2,
-	})
-	modApi:addGenerationOption("brYellowDisarm", STRINGS.BACKSTAB.OPTIONS.BR_YELLOWDISARM, STRINGS.BACKSTAB.OPTIONS.BR_YELLOWDISARM_TIP, {
-		noUpdate = true,
-		enabled = false,
-	})
-	modApi:addGenerationOption("brRedMp", STRINGS.BACKSTAB.OPTIONS.BR_REDMP, STRINGS.BACKSTAB.OPTIONS.BR_REDMP_TIP, {
-		noUpdate = true,
-		values = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
-		value = 4,
-	})
-	modApi:addGenerationOption("brRedDisarm", STRINGS.BACKSTAB.OPTIONS.BR_REDDISARM, STRINGS.BACKSTAB.OPTIONS.BR_REDDISARM_TIP, {
-		noUpdate = true,
-		enabled = true,
-	})
-	modApi:addGenerationOption("brRedLocate", STRINGS.BACKSTAB.OPTIONS.BR_REDLOCATE, STRINGS.BACKSTAB.OPTIONS.BR_REDLOCATE_TIP, {
-		noUpdate = true,
-		values = {false, "start", "end"},
-		strings = {STRINGS.BACKSTAB.OPTIONS.DISABLED, STRINGS.BACKSTAB.OPTIONS.LOCATE_START, STRINGS.BACKSTAB.OPTIONS.LOCATE_END},
-		value = "start",
-	})
+	local util = include( "modules/util" )
+	local function formatDefault(value, presetLabel)
+		return util.sformat("{1} ({2})", value, presetLabel)
+	end
 
-	modApi:addGenerationOption("stabReverseZones", STRINGS.BACKSTAB.OPTIONS.STAB_REVERSEZONES, STRINGS.BACKSTAB.OPTIONS.STAB_REVERSEZONES_TIP, {
+	local STR = STRINGS.BACKSTAB.OPTIONS
+
+	-- Main Switch
+	modApi:addGenerationOption("brMod", STR.BR_MAIN, STR.BR_MAIN_TIP, {
+		noUpdate=true,
+		enabled = true,
+		masks = {{mask = "mask_br_enabled", requirement = true}},
+	})
+	-- Zone parameters
+	modApi:addGenerationOption("brStartTurn", STR.BR_STARTTURN, STR.BR_STARTTURN_TIP, {
+		noUpdate = true,
+		values = {1, 2, 3, 4, 5, 6, 10, 15, 20},
+		strings = {"1", "2", formatDefault("3", STR.DEFAULT), "4", "5", "6", "10", "15", "20"},
+		value = 3,
+		requirements = {{mask = "mask_br_enabled", requirement = true}},
+	})
+	modApi:addGenerationOption("brRoomsPerCycle", STR.BR_ZONESIZE, STR.BR_ZONESIZE_TIP, {
+		noUpdate = true,
+		values = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+		strings = {"1", formatDefault("2", STR.DEFAULT), "3", "4", "5", "6", "7", "8", "9", "10"},
+		value = 2,
+		requirements = {{mask = "mask_br_enabled", requirement = true}},
+	})
+	modApi:addGenerationOption("brTurnsPerCycle", STR.BR_ZONETURNS, STR.BR_ZONETURNS_TIP, {
+		noUpdate = true,
+		values = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+		strings = {"1", "2", formatDefault("3", STR.DEFAULT), "4", "5", "6", "7", "8", "9", "10"},
+		value = 3,
+		requirements = {{mask = "mask_br_enabled", requirement = true}},
+	})
+	modApi:addGenerationOption("brFinalRooms", STR.BR_FINALSIZE, STR.BR_FINALSIZE_TIP, {
+		noUpdate = true,
+		values = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+		strings = {formatDefault("1", STR.DEFAULT), "2", "3", "4", "5", "6", "7", "8", "9", "10"},
+		value = 1,
+		requirements = {{mask = "mask_br_enabled", requirement = true}},
+	})
+	-- Reversal
+	modApi:addGenerationOption("stabReverseZones", STR.STAB_REVERSEZONES, STR.STAB_REVERSEZONES_TIP, {
 		noUpdate = true,
 		values = {false, 1, 2, 3, 4, 5, 6, 7, 8, 9},
-		strings = {STRINGS.BACKSTAB.OPTIONS.DISABLED, "1", "2 (Recommended)", "3", "4", "5", "6", "7", "8", "9"},
+		strings = {formatDefault(STR.DISABLED, STR.DEFAULT), "1", formatDefault("2", STR.PRESET_BACKSTAB), "3", "4", "5", "6", "7", "8", "9"},
 		value = false,
+		requirements = {{mask = "mask_br_enabled", requirement = true}},
+	})
+
+	-- Zone penalties
+	modApi:addGenerationOption("brZonePenalties", STR.BR_ZONEPENALTIES, STR.BR_ZONEPENALTIES_TIP, {
+		noUpdate = true,
+		values = {"se", "classic", "custom"},
+		strings = {STR.PRESET_SE_FULL, STR.PRESET_CLASSIC_FULL, STR.CUSTOM},
+		value = "se",
+		masks = {{mask = "mask_custom_penalties", requirement = "custom"}},
+		requirements = {{mask = "mask_br_enabled", requirement = true}},
+	})
+	-- Yellow-zone penalties
+	modApi:addGenerationOption("brYellowMp", STR.BR_YELLOWMP, STR.BR_YELLOWMP_TIP, {
+		noUpdate = true,
+		values = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+		strings = {formatDefault(STR.DISABLED, STR.PRESET_SE), "1", formatDefault("2", STR.PRESET_CLASSIC), "3", "4", "5", "6", "7", "8", "9"},
+		value = 0,
+		requirements = {{mask = "mask_custom_penalties", requirement = true}, {mask = "mask_br_enabled", requirement = true}},
+	})
+	modApi:addGenerationOption("brYellowDisarm", STR.BR_YELLOWDISARM, STR.BR_YELLOWDISARM_TIP, {
+		noUpdate = true,
+		values = {false, true},
+		strings = {formatDefault(STR.DISABLED, STR.PRESET_CLASSIC.."/"..STR.PRESET_SE), STR.ENABLED},
+		value = false,
+		requirements = {{mask = "mask_custom_penalties", requirement = true}, {mask = "mask_br_enabled", requirement = true}},
+	})
+	modApi:addGenerationOption("brYellowLocate", STR.BR_YELLOWLOCATE, STR.BR_YELLOWLOCATE_TIP, {
+		noUpdate = true,
+		values = {false, "n", "a"},
+		strings = {formatDefault(STR.DISABLED, STR.PRESET_CLASSIC.."/"..STR.PRESET_SE), STR.ALARM_NOTIFY, STR.ALARM_ALERT},
+		value = false,
+		requirements = {{mask = "mask_custom_penalties", requirement = true}, {mask = "mask_br_enabled", requirement = true}},
+	})
+	modApi:addGenerationOption("brYellowDoorAlarm", STR.BR_YELLOWDOORALARM, STR.BR_YELLOWDOORALARM_TIP, {
+		noUpdate = true,
+		values = {false, "n", "a"},
+		strings = {formatDefault(STR.DISABLED, STR.PRESET_CLASSIC), formatDefault(STR.ALARM_NOTIFY, STR.PRESET_SE), STR.ALARM_ALERT},
+		value = "n",
+		requirements = {{mask = "mask_custom_penalties", requirement = true}, {mask = "mask_br_enabled", requirement = true}},
+	})
+	modApi:addGenerationOption("brYellowSafeAlarm", STR.BR_YELLOWSAFEALARM, STR.BR_YELLOWSAFEALARM_TIP, {
+		noUpdate = true,
+		values = {false, "n", "a"},
+		strings = {formatDefault(STR.DISABLED, STR.PRESET_CLASSIC), formatDefault(STR.ALARM_NOTIFY, STR.PRESET_SE), STR.ALARM_ALERT},
+		value = "n",
+		requirements = {{mask = "mask_custom_penalties", requirement = true}, {mask = "mask_br_enabled", requirement = true}},
+	})
+	modApi:addGenerationOption("brYellowAttackAlarm", STR.BR_YELLOWATTACKALARM, STR.BR_YELLOWATTACKALARM_TIP, {
+		noUpdate = true,
+		values = {false, "n", "a"},
+		strings = {formatDefault(STR.DISABLED, STR.PRESET_CLASSIC.."/"..STR.PRESET_SE), STR.ALARM_NOTIFY, STR.ALARM_ALERT},
+		value = false,
+		requirements = {{mask = "mask_custom_penalties", requirement = true}, {mask = "mask_br_enabled", requirement = true}},
+	})
+	-- Red-zone penalties
+	modApi:addGenerationOption("brRedMp", STR.BR_REDMP, STR.BR_REDMP_TIP, {
+		noUpdate = true,
+		values = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+		strings = {formatDefault(STR.DISABLED, STR.PRESET_SE), "1", "2", "3", formatDefault("4", STR.PRESET_CLASSIC), "5", "6", "7", "8", "9"},
+		value = 0,
+		requirements = {{mask = "mask_custom_penalties", requirement = true}, {mask = "mask_br_enabled", requirement = true}},
+	})
+	modApi:addGenerationOption("brRedDisarm", STR.BR_REDDISARM, STR.BR_REDDISARM_TIP, {
+		noUpdate = true,
+		values = {false, true},
+		strings = {formatDefault(STR.DISABLED, STR.PRESET_SE), formatDefault(STR.ENABLED, STR.PRESET_CLASSIC)},
+		value = false,
+		requirements = {{mask = "mask_custom_penalties", requirement = true}, {mask = "mask_br_enabled", requirement = true}},
+	})
+	modApi:addGenerationOption("brRedLocate", STR.BR_REDLOCATE, STR.BR_REDLOCATE_TIP, {
+		noUpdate = true,
+		values = {false, "n", "a"},
+		strings = {STR.DISABLED, STR.ALARM_NOTIFY, formatDefault(STR.ALARM_ALERT, STR.PRESET_CLASSIC.."/"..STR.PRESET_SE)},
+		value = "a",
+		requirements = {{mask = "mask_custom_penalties", requirement = true}, {mask = "mask_br_enabled", requirement = true}},
+	})
+	modApi:addGenerationOption("brRedDoorAlarm", STR.BR_REDDOORALARM, STR.BR_REDDOORALARM_TIP, {
+		noUpdate = true,
+		values = {false, "n", "a"},
+		strings = {formatDefault(STR.DISABLED, STR.PRESET_CLASSIC), STR.ALARM_NOTIFY, formatDefault(STR.ALARM_ALERT, STR.PRESET_SE)},
+		value = "a",
+		requirements = {{mask = "mask_custom_penalties", requirement = true}, {mask = "mask_br_enabled", requirement = true}},
+	})
+	modApi:addGenerationOption("brRedSafeAlarm", STR.BR_REDSAFEALARM, STR.BR_REDSAFEALARM_TIP, {
+		noUpdate = true,
+		values = {false, "n", "a"},
+		strings = {formatDefault(STR.DISABLED, STR.PRESET_CLASSIC), STR.ALARM_NOTIFY, formatDefault(STR.ALARM_ALERT, STR.PRESET_SE)},
+		value = "a",
+		requirements = {{mask = "mask_custom_penalties", requirement = true}, {mask = "mask_br_enabled", requirement = true}},
+	})
+	modApi:addGenerationOption("brRedAttackAlarm", STR.BR_REDATTACKALARM, STR.BR_REDATTACKALARM_TIP, {
+		noUpdate = true,
+		values = {false, "n", "a"},
+		strings = {formatDefault(STR.DISABLED, STR.PRESET_CLASSIC), STR.ALARM_NOTIFY, formatDefault(STR.ALARM_ALERT, STR.PRESET_SE)},
+		value = "a",
+		requirements = {{mask = "mask_custom_penalties", requirement = true}, {mask = "mask_br_enabled", requirement = true}},
 	})
 
 	local dataPath = modApi:getDataPath()
@@ -97,29 +191,73 @@ local function load(modApi, options, params)
 	if params then
 		params.backstab_enabled = true
 	end
-	if params and options["brStartTurn"] and options["brStartTurn"].value then
-		params.backstab_startTurn = options["brStartTurn"].value
+	if params and options["brMod"] and options["brMod"].enabled then
+		params.backstab_startTurn = options["brStartTurn"] and options["brStartTurn"].value or 3
 		params.backstab_roomsPerCycle = options["brRoomsPerCycle"] and options["brRoomsPerCycle"].value or 2
 		params.backstab_turnsPerCycle = options["brTurnsPerCycle"] and options["brTurnsPerCycle"].value or 3
 		params.backstab_finalRooms = options["brFinalRooms"] and options["brFinalRooms"].value or 1
-
-		local yellowPenalties = {}
-		params.backstab_yellowPenalties = yellowPenalties
-		yellowPenalties.mp = options["brYellowMp"].value
-		yellowPenalties.noSprint = options["brYellowMp"].value > 0
-		yellowPenalties.disarm = options["brYellowDisarm"].enabled
-		yellowPenalties.locate = false
-
-		local redPenalties = {}
-		params.backstab_redPenalties = redPenalties
-		redPenalties.mp = options["brRedMp"].value
-		redPenalties.noSprint = options["brRedMp"].value > 0
-		redPenalties.disarm = options["brRedDisarm"].enabled
-		redPenalties.locate = options["brRedLocate"].value
-
 		local stab = {}
 		params.backstab_stab = stab
 		stab.reverseZones = options["stabReverseZones"].value
+
+		local yellowPenalties = {}
+		params.backstab_yellowPenalties = yellowPenalties
+		local redPenalties = {}
+		params.backstab_redPenalties = redPenalties
+
+		if options["brZonePenalties"] and options["brZonePenalties"].value == "se" then
+			yellowPenalties.mp = 0
+			yellowPenalties.noSprint = false
+			yellowPenalties.disarm = false
+			yellowPenalties.locate = false
+			yellowPenalties.doorAlarm = "n"
+			yellowPenalties.safeAlarm = "n"
+			yellowPenalties.attackAlarm = false
+
+			redPenalties.mp = 0
+			redPenalties.noSprint = false
+			redPenalties.disarm = false
+			redPenalties.locate = "start"
+			redPenalties.locateAlarm = "a"
+			redPenalties.doorAlarm = "a"
+			redPenalties.safeAlarm = "a"
+			redPenalties.attackAlarm = "a"
+		elseif options["brZonePenalties"] and options["brZonePenalties"].value == "classic" then
+			yellowPenalties.mp = 2
+			yellowPenalties.noSprint = true
+			yellowPenalties.disarm = false
+			yellowPenalties.locate = false
+			yellowPenalties.doorAlarm = false
+			yellowPenalties.safeAlarm = false
+			yellowPenalties.attackAlarm = false
+
+			redPenalties.mp = 4
+			redPenalties.noSprint = true
+			redPenalties.disarm = true
+			redPenalties.locate = "start"
+			redPenalties.locateAlarm = "a"
+			redPenalties.doorAlarm = false
+			redPenalties.safeAlarm = false
+			redPenalties.attackAlarm = false
+		else
+			yellowPenalties.mp = options["brYellowMp"].value
+			yellowPenalties.noSprint = options["brYellowMp"].value > 0
+			yellowPenalties.disarm = options["brYellowDisarm"].value
+			yellowPenalties.locate = options["brYellowLocate"].value and "start" or false
+			yellowPenalties.locateAlarm = options["brYellowLocate"].value
+			yellowPenalties.doorAlarm = options["brYellowDoorAlarm"].value
+			yellowPenalties.safeAlarm = options["brYellowSafeAlarm"].value
+			yellowPenalties.attackAlarm = options["brYellowAttackAlarm"].value
+
+			redPenalties.mp = options["brRedMp"].value
+			redPenalties.noSprint = options["brRedMp"].value > 0
+			redPenalties.disarm = options["brRedDisarm"].value
+			redPenalties.locate = options["brRedLocate"].value and "start" or false
+			redPenalties.locateAlarm = options["brRedLocate"].value
+			redPenalties.doorAlarm = options["brRedDoorAlarm"].value
+			redPenalties.safeAlarm = options["brRedSafeAlarm"].value
+			redPenalties.attackAlarm = options["brRedAttackAlarm"].value
+		end
 	end
 
 	local npc_abilities = include( scriptPath .. "/npc_abilities" )
