@@ -488,10 +488,12 @@ local npc_abilities =
 			elseif evType == "BACKSTAB_attackQueueProcess" then
 				local queue = self._attackQueue
 				self._attackQueue = nil
-				local hunters = {}
-				for _,entry in ipairs(queue) do
-					local unit = sim:getUnit(entry.unitID)
-					royaleFlushAttacked(sim, unit, entry.x, entry.y, hunters)
+				if queue then
+					local hunters = {}
+					for _,entry in ipairs(queue) do
+						local unit = sim:getUnit(entry.unitID)
+						royaleFlushAttacked(sim, unit, entry.x, entry.y, hunters)
+					end
 				end
 			end
 		end,
