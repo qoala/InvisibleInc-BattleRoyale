@@ -2,6 +2,7 @@ local util = include( "modules/util" )
 local mainframe_common = include("sim/abilities/mainframe_common")
 local simdefs = include("sim/simdefs")
 local simquery = include("sim/simquery")
+local cdefs = include("client_defs")
 
 local createDaemon = mainframe_common.createDaemon
 
@@ -97,7 +98,7 @@ local function royaleFlushApplyPenalties(sim, unit, penalties, hunters)
 
 	if uiTxt then
 		local x,y = unit:getLocation()
-		sim:dispatchEvent(simdefs.EV_UNIT_FLOAT_TXT,{txt=uiTxt,x=x,y=y,unit=unit,color={r=1/2,g=1,b=1,a=1}})
+		sim:dispatchEvent(simdefs.EV_UNIT_FLOAT_TXT,{txt=uiTxt,x=x,y=y,unit=unit,color=cdefs.COLOR_PLAYER_WARNING})
 	end
 
 	-- No point in locating dead/pinned agents. KOed agents without a chaperone are fair game.
@@ -198,10 +199,15 @@ local function royaleFlushDoor(sim, unit, doorCell1, doorCell2)
 		penalties = sim:getParams().difficultyOptions.backstab_yellowPenalties
 	end
 
+	local chase = nil
 	if penalties.doorAlarm == "a" then
-		huntAgent(sim, unit)
+		chase = huntAgent(sim, unit)
 	elseif penalties.doorAlarm == "n" then
-		chaseAgent(sim, unit)
+		chase = chaseAgent(sim, unit)
+	end
+	if chase then
+		local uiTxt = STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH.DOOR_EFFECT
+		sim:dispatchEvent(simdefs.EV_UNIT_FLOAT_TXT,{txt=uiTxt,x=doorCell.x,y=doorCell.y,color=cdefs.COLOR_CORP_WARNING})
 	end
 end
 local function royaleFlushSafe(sim, unit, safeUnit)
@@ -224,10 +230,15 @@ local function royaleFlushSafe(sim, unit, safeUnit)
 		penalties = sim:getParams().difficultyOptions.backstab_yellowPenalties
 	end
 
+	local chase = nil
 	if penalties.safeAlarm == "a" then
-		huntAgent(sim, unit)
+		chase = huntAgent(sim, unit)
 	elseif penalties.safeAlarm == "n" then
-		chaseAgent(sim, unit)
+		chase = chaseAgent(sim, unit)
+	end
+	if chase then
+		local uiTxt = STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH.SAFE_EFFECT
+		sim:dispatchEvent(simdefs.EV_UNIT_FLOAT_TXT,{txt=uiTxt,x=sx,y=sy,color=cdefs.COLOR_CORP_WARNING})
 	end
 end
 local function royaleFlushAttacked(sim, attackedUnit, x,y, hunters)
@@ -256,7 +267,13 @@ local function royaleFlushAttacked(sim, attackedUnit, x,y, hunters)
 	elseif penalties.attackAlarm == "n" then
 		hunter = chaseCell(sim, x,y, attackedUnit, hunters)
 	end
+	if hunter then
+		local uiTxt = STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH.ATTACK_EFFECT
+		sim:dispatchEvent(simdefs.EV_UNIT_FLOAT_TXT,{txt=uiTxt,x=x,y=y,color=cdefs.COLOR_CORP_WARNING})
+	end
 end
+
+-- ===
 
 local function triggeredPenaltiesDesc(doors, safes, attacks, alerting)
 	local strings = STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH
