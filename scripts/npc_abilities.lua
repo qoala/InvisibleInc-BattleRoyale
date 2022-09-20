@@ -5,6 +5,8 @@ local simquery = include("sim/simquery")
 
 local createDaemon = mainframe_common.createDaemon
 
+-- ===
+
 -- Copy of Brain:spawnInterest. Changes at -- BACKSTAB.
 local function spawnInterest(unit, x, y, sense, reason, sourceUnit)
 	local senses = unit:getBrain():getSenses()
@@ -19,12 +21,30 @@ local function spawnInterest(unit, x, y, sense, reason, sourceUnit)
 				break
 			end
 		end
+		-- BACKSTAB: always draw these interests
+		interest.alwaysDraw = true
 	end
 	unit:getSim():processReactions(unit)
 end
 
-local function huntAgent(sim, agent, hunters)
+local function chaseCell(sim, x, y, agent)
+	local closestGuard = simquery.findClosestUnit(sim:getNPC():getUnits(), x, y,
+		function(guard)
+			return (guard:getBrain() and not guard:isKO()
+			    and guard:getBrain():getSituation().ClassType ~= simdefs.SITUATION_COMBAT
+			    and guard:getBrain():getSituation().ClassType ~= simdefs.SITUATION_FLEE)
+		end)
+	if closestGuard then
+		spawnInterest(closestGuard, x, y, simdefs.SENSE_RADIO, simdefs.REASON_CAMERA, agent)
+	end
+end
+local function chaseAgent(sim, agent)
 	local x,y = agent:getLocation()
+	return chaseCell(sim, x, y, agent)
+end
+
+local function huntCell(sim, x, y, agent, hunters)
+	hunters = hunters or {}
 	local closestGuard = simquery.findClosestUnit(sim:getNPC():getUnits(), x, y,
 		function(guard)
 			return (guard:getBrain() and not guard:isKO()
@@ -36,6 +56,16 @@ local function huntAgent(sim, agent, hunters)
 		hunters[closestGuard:getID()] = agent
 		spawnInterest(closestGuard, x, y, simdefs.SENSE_RADIO, simdefs.REASON_HUNTING, agent)
     end
+end
+local function huntAgent(sim, agent, hunters)
+	local x,y = agent:getLocation()
+	return huntCell(sim, x, y, agent, hunters)
+end
+
+-- ===
+
+local function isPlayerAgent(unit)
+	return unit and unit:isPC() and simquery.isAgent(unit) and unit:getLocation() and not unit:getTraits().takenDrone
 end
 
 local function royaleFlushApplyPenalties(sim, unit, penalties, hunters)
@@ -70,7 +100,7 @@ local function royaleFlushApplyPenalties(sim, unit, penalties, hunters)
 end
 
 local function royaleFlushUnitStartTurn(sim, unit, hunters)
-	if not simquery.isAgent(unit) or unit:getTraits().takenDrone then
+	if not isPlayerAgent(unit) then
 		return
 	end
 	if unit:getTraits().backstab_mpMaxPenalty then
@@ -80,9 +110,6 @@ local function royaleFlushUnitStartTurn(sim, unit, hunters)
 	end
 
 	local x,y = unit:getLocation()
-	if not x then
-		return
-	end
 	local cell = sim:getCell(x, y)
 	local simRoom = sim._mutableRooms[cell.procgenRoom.roomIndex]
 	if not simRoom or not simRoom.backstabState then
@@ -90,13 +117,12 @@ local function royaleFlushUnitStartTurn(sim, unit, hunters)
 	elseif simRoom.backstabState == 0 then
 		royaleFlushApplyPenalties(sim, unit, sim:getParams().difficultyOptions.backstab_redPenalties, hunters)
 	elseif simRoom.backstabState == 1 then
-		local difficultyOptions = sim:getParams().difficultyOptions
 		royaleFlushApplyPenalties(sim, unit, sim:getParams().difficultyOptions.backstab_yellowPenalties, hunters)
 	end
 end
 
 local function royaleFlushUnitEndTurn(sim, unit, hunters)
-	if not simquery.isAgent(unit) or unit:getTraits().takenDrone then
+	if not isPlayerAgent(unit) then
 		return
 	end
 	local penalties = sim:getParams().difficultyOptions.backstab_redPenalties
@@ -105,9 +131,6 @@ local function royaleFlushUnitEndTurn(sim, unit, hunters)
 	end
 
 	local x,y = unit:getLocation()
-	if not x then
-		return
-	end
 	local cell = sim:getCell(x, y)
 	local simRoom = sim._mutableRooms[cell.procgenRoom.roomIndex]
 	if not simRoom or not simRoom.backstabState then
@@ -116,6 +139,88 @@ local function royaleFlushUnitEndTurn(sim, unit, hunters)
 		if penalties.locate == "end" and not unit:isNeutralized() then
 			huntAgent(sim, unit, hunters)
 		end
+	end
+end
+
+local function pickNearestDoorCell(unit, doorCell1, doorCell2)
+	local x,y = unit:getLocation()
+	if doorCell1.x == doorCell2.x then
+		if doorCell1.y > doorCell2.y then
+			if y >= doorCell1.y then
+				return doorCell1
+			else
+				return doorCell2
+			end
+		else
+			if y >= doorCell2.y then
+				return doorCell2
+			else
+				return doorCell1
+			end
+		end
+	else
+		if doorCell1.x > doorCell2.x then
+			if x >= doorCell1.x then
+				return doorCell1
+			else
+				return doorCell2
+			end
+		else
+			if x >= doorCell2.x then
+				return doorCell2
+			else
+				return doorCell1
+			end
+		end
+	end
+end
+
+local function royaleFlushDoor(sim, unit, doorCell1, doorCell2)
+	if not isPlayerAgent(unit) then
+		return
+	end
+
+	local doorCell = pickNearestDoorCell(unit, doorCell1, doorCell2)
+	local simRoom = sim._mutableRooms[doorCell.procgenRoom.roomIndex]
+	local penalties
+	if not simRoom or not simRoom.backstabState then
+		return
+	elseif simRoom.backstabState == 0 then
+		penalties = sim:getParams().difficultyOptions.backstab_redPenalties
+	elseif simRoom.backstabState == 1 then
+		penalties = sim:getParams().difficultyOptions.backstab_yellowPenalties
+	end
+
+	if penalties.doorAlarm == "a" then
+		huntAgent(sim, unit)
+	elseif penalties.doorAlarm == "n" then
+		chaseAgent(sim, unit)
+	end
+end
+local function royaleFlushSafe(sim, unit, safeUnit)
+	if not isPlayerAgent(unit) then
+		return
+	end
+
+	local sx,sy = safeUnit:getLocation()
+	if not sx then
+		return
+	end
+	local safeCell = sim:getCell(sx, sy)
+	local simRoom = sim._mutableRooms[safeCell.procgenRoom.roomIndex]
+	local penalties
+	if not simRoom or not simRoom.backstabState then
+		return
+	elseif simRoom.backstabState == 0 then
+		penalties = sim:getParams().difficultyOptions.backstab_redPenalties
+	elseif simRoom.backstabState == 1 then
+		penalties = sim:getParams().difficultyOptions.backstab_yellowPenalties
+	end
+
+	if penalties.safeAlarm == "a" then
+		huntAgent(sim, unit)
+	elseif penalties.safeAlarm == "n" then
+		chaseAgent(sim, unit)
 	end
 end
 
@@ -221,6 +326,8 @@ local function updateLegacyParams(difficultyOptions)
 	end
 end
 
+-- ===
+
 local npc_abilities =
 {
 	backstab_royaleFlush = util.extend(createDaemon(STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH))
@@ -246,11 +353,15 @@ local npc_abilities =
 
 			sim:addTrigger( simdefs.TRG_START_TURN, self )
 			sim:addTrigger( simdefs.TRG_END_TURN, self )
+			sim:addTrigger( simdefs.TRG_UNIT_USEDOOR, self )
+			sim:addTrigger( simdefs.TRG_SAFE_LOOTED, self )
 		end,
 
 		onDespawnAbility = function( self, sim )
 			sim:removeTrigger( simdefs.TRG_START_TURN, self )
 			sim:removeTrigger( simdefs.TRG_END_TURN, self )
+			sim:removeTrigger( simdefs.TRG_UNIT_USEDOOR, self )
+			sim:removeTrigger( simdefs.TRG_SAFE_LOOTED, self )
 		end,
 
 		onTrigger = function( self, sim, evType, evData, userUnit )
@@ -289,6 +400,10 @@ local npc_abilities =
 				for _,unit in ipairs(sim:getPC():getUnits()) do
 					royaleFlushUnitEndTurn(sim, unit, hunters)
 				end
+			elseif evType == simdefs.TRG_UNIT_USEDOOR and sim:getCurrentPlayer():isPC() and evData.unit and evData.unit:isPC() then
+				royaleFlushDoor(sim, evData.unit, evData.cell, evData.tocell)
+			elseif evType == simdefs.TRG_SAFE_LOOTED and evData.targetUnit:getTraits().safeUnit and evData.unit and evData.unit:isPC() then
+				royaleFlushSafe(sim, evData.unit, evData.targetUnit)
 			end
 		end,
 
