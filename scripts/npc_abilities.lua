@@ -197,6 +197,8 @@ local function royaleFlushDoor(sim, unit, doorCell1, doorCell2)
 		penalties = sim:getParams().difficultyOptions.backstab_redPenalties
 	elseif simRoom.backstabState == 1 then
 		penalties = sim:getParams().difficultyOptions.backstab_yellowPenalties
+	else
+		return
 	end
 
 	local chase = nil
@@ -228,6 +230,8 @@ local function royaleFlushSafe(sim, unit, safeUnit)
 		penalties = sim:getParams().difficultyOptions.backstab_redPenalties
 	elseif simRoom.backstabState == 1 then
 		penalties = sim:getParams().difficultyOptions.backstab_yellowPenalties
+	else
+		return
 	end
 
 	local chase = nil
@@ -259,6 +263,8 @@ local function royaleFlushAttacked(sim, attackedUnit, x,y, hunters)
 		penalties = sim:getParams().difficultyOptions.backstab_redPenalties
 	elseif simRoom.backstabState == 1 then
 		penalties = sim:getParams().difficultyOptions.backstab_yellowPenalties
+	else
+		return
 	end
 
 	local hunter
