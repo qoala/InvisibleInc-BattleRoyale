@@ -72,9 +72,9 @@ local function init(modApi)
 	-- Zone penalties
 	modApi:addGenerationOption("brZonePenalties", STR.BR_ZONEPENALTIES, STR.BR_ZONEPENALTIES_TIP, {
 		noUpdate = true,
-		values = {"se", "classic", "custom"},
-		strings = {STR.PRESET_SE_FULL, STR.PRESET_CLASSIC_FULL, STR.CUSTOM},
-		value = "se",
+		values = {"se", "se+", "classic", "custom"},
+		strings = {STR.PRESET_SE_FULL, STR.PRESET_SE_PLUS_FULL, STR.PRESET_CLASSIC_FULL, STR.CUSTOM},
+		difficulties = {{1,"se"},{2,"se"},{3,"se"},{4,"se+"},{5,"se"},{6,"se+"},{7,"se"},{8,"se+"}},
 		masks = {{mask = "mask_custom_penalties", requirement = "custom"}},
 		requirements = {{mask = "mask_br_enabled", requirement = true}},
 	})
@@ -95,8 +95,8 @@ local function init(modApi)
 	})
 	modApi:addGenerationOption("brYellowLocate", STR.BR_YELLOWLOCATE, STR.BR_YELLOWLOCATE_TIP, {
 		noUpdate = true,
-		values = {false, "n", "a"},
-		strings = {formatDefault(STR.DISABLED, STR.PRESET_CLASSIC.."/"..STR.PRESET_SE), STR.ALARM_NOTIFY, STR.ALARM_ALERT},
+		values = {false, "n.start", "a.start", "n.end", "a.end"},
+		strings = {formatDefault(STR.DISABLED, STR.PRESET_CLASSIC.."/"..STR.PRESET_SE), STR.ALARM_NOTIFY_NEXT, STR.ALARM_ALERT_NEXT, STR.ALARM_NOTIFY_NOW, STR.ALARM_ALERT_NOW},
 		value = false,
 		requirements = {{mask = "mask_custom_penalties", requirement = true}, {mask = "mask_br_enabled", requirement = true}},
 	})
@@ -138,9 +138,9 @@ local function init(modApi)
 	})
 	modApi:addGenerationOption("brRedLocate", STR.BR_REDLOCATE, STR.BR_REDLOCATE_TIP, {
 		noUpdate = true,
-		values = {false, "n", "a"},
-		strings = {STR.DISABLED, STR.ALARM_NOTIFY, formatDefault(STR.ALARM_ALERT, STR.PRESET_CLASSIC.."/"..STR.PRESET_SE)},
-		value = "a",
+		values = {false, "n.start", "a.start", "n.end", "a.end"},
+		strings = {STR.DISABLED, STR.ALARM_NOTIFY_NEXT, formatDefault(STR.ALARM_ALERT_NEXT, STR.PRESET_CLASSIC.."/"..STR.PRESET_SE), STR.ALARM_NOTIFY_NOW, formatDefault(STR.ALARM_ALERT_NOW, STR.PRESET_SE_PLUS)},
+		difficulties = {{1,"a.start"},{2,"a.start"},{3,"a.start"},{4,"a.end"},{5,"a.start"},{6,"a.end"},{7,"a.start"},{8,"a.end"}},
 		requirements = {{mask = "mask_custom_penalties", requirement = true}, {mask = "mask_br_enabled", requirement = true}},
 	})
 	modApi:addGenerationOption("brRedDoorAlarm", STR.BR_REDDOORALARM, STR.BR_REDDOORALARM_TIP, {
@@ -185,6 +185,13 @@ local function earlyLoad(modApi, options, params)
 	earlyUnload(modApi)
 end
 
+local LOCATOR_MAPPING = {
+	["n.start"] = {"n", "start"},
+	["a.start"] = {"a", "start"},
+	["n.end"] = {"n", "end"},
+	["a.end"] = {"a", "end"},
+}
+
 local function load(modApi, options, params)
 	local scriptPath = modApi:getScriptPath()
 
@@ -222,6 +229,23 @@ local function load(modApi, options, params)
 			redPenalties.doorAlarm = "a"
 			redPenalties.safeAlarm = "a"
 			redPenalties.attackAlarm = "a"
+		elseif options["brZonePenalties"] and options["brZonePenalties"].value == "se+" then
+			yellowPenalties.mp = 0
+			yellowPenalties.noSprint = false
+			yellowPenalties.disarm = false
+			yellowPenalties.locate = false
+			yellowPenalties.doorAlarm = "n"
+			yellowPenalties.safeAlarm = "n"
+			yellowPenalties.attackAlarm = false
+
+			redPenalties.mp = 0
+			redPenalties.noSprint = false
+			redPenalties.disarm = false
+			redPenalties.locate = "end"
+			redPenalties.locateAlarm = "a"
+			redPenalties.doorAlarm = "a"
+			redPenalties.safeAlarm = "a"
+			redPenalties.attackAlarm = "a"
 		elseif options["brZonePenalties"] and options["brZonePenalties"].value == "classic" then
 			yellowPenalties.mp = 2
 			yellowPenalties.noSprint = true
@@ -243,8 +267,11 @@ local function load(modApi, options, params)
 			yellowPenalties.mp = options["brYellowMp"].value
 			yellowPenalties.noSprint = options["brYellowMp"].value > 0
 			yellowPenalties.disarm = options["brYellowDisarm"].value
-			yellowPenalties.locate = options["brYellowLocate"].value and "start" or false
-			yellowPenalties.locateAlarm = options["brYellowLocate"].value
+			do
+				local locatorValues = LOCATOR_MAPPING[options["brYellowLocate"].value] or {false, false}
+				yellowPenalties.locateAlarm = locatorValues[1]
+				yellowPenalties.locate = locatorValues[2]
+			end
 			yellowPenalties.doorAlarm = options["brYellowDoorAlarm"].value
 			yellowPenalties.safeAlarm = options["brYellowSafeAlarm"].value
 			yellowPenalties.attackAlarm = options["brYellowAttackAlarm"].value
@@ -252,8 +279,11 @@ local function load(modApi, options, params)
 			redPenalties.mp = options["brRedMp"].value
 			redPenalties.noSprint = options["brRedMp"].value > 0
 			redPenalties.disarm = options["brRedDisarm"].value
-			redPenalties.locate = options["brRedLocate"].value and "start" or false
-			redPenalties.locateAlarm = options["brRedLocate"].value
+			do
+				local locatorValues = LOCATOR_MAPPING[options["brRedLocate"].value] or {false, false}
+				redPenalties.locateAlarm = locatorValues[1]
+				redPenalties.locate = locatorValues[2]
+			end
 			redPenalties.doorAlarm = options["brRedDoorAlarm"].value
 			redPenalties.safeAlarm = options["brRedSafeAlarm"].value
 			redPenalties.attackAlarm = options["brRedAttackAlarm"].value

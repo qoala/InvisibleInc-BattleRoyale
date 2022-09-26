@@ -6,10 +6,12 @@ local MOD_STRINGS =
 		DEFAULT = "DEFAULT",
 		CUSTOM = "CUSTOM",
 		PRESET_BACKSTAB = "BACKSTAB",
-		PRESET_CLASSIC_FULL = "CLASSIC EDITION",
+		PRESET_CLASSIC_FULL = "CLASSIC ECM",
 		PRESET_CLASSIC = "CE",
-		PRESET_SE_FULL = "SCANNER EDITION",
+		PRESET_SE_FULL = "SCANNER ECM",
 		PRESET_SE = "SE",
+		PRESET_SE_PLUS_FULL = "SCANNER ECM +",
+		PRESET_SE_PLUS = "SE+",
 
 		BR_MAIN = "ROYALE FLUSH",
 		BR_MAIN_TIP = "<c:FF8411>ROYALE FLUSH:</c>\n A challenging new daemon installed at the start of every (non-story) mission.",
@@ -28,6 +30,7 @@ local MOD_STRINGS =
 		BR_ZONEPENALTIES = "ZONE PENALTIES",
 		BR_ZONEPENALTIES_TIP = ("<c:FF8411>ZONE PENALTIES</c>\nWhat penalties are applied in each zone.\n\n"..
 			"SE: Actions in the zone notify guards.\n  YELLOW: alarmed doors, alarmed safes\n  RED: + guard transponders, agent locator\n\n"..
+			"SE+: The red zone agent locator fires at the end of your turn. Guards will come for you immediately.\n\n"..
 			"CLASSIC: Penalize agents ending in the zone.\n  YELLOW: -2AP\n  RED: -4AP, disarm, agent locator"),
 
 		BR_YELLOWMP = "    YELLOW ZONE: AP PENALTY",
@@ -47,7 +50,7 @@ local MOD_STRINGS =
 		BR_REDDISARM = "    RED ZONE: DISARM",
 		BR_REDDISARM_TIP = "<c:FF8411>RED ZONE: DISARM</c>\nIf enabled, agents ending in the red zone lose their attack.",
 		BR_REDLOCATE = "    RED ZONE: LOCATE AGENT",
-		BR_REDLOCATE_TIP = "<c:FF8411>RED ZONE: LOCATE AGENT</c>\nIf enabled, agents ending turn in the red zone will be located at the start of their next turn.",
+		BR_REDLOCATE_TIP = "<c:FF8411>RED ZONE: LOCATE AGENT</c>\nIf enabled, agents ending turn in the red zone will be located either at the start of their next turn or immediately.",
 		BR_REDDOORALARM = "    RED ZONE: ALARMED DOORS",
 		BR_REDDOORALARM_TIP = "<c:FF8411>RED ZONE: ALARMED DOORS</c>\nIf enabled, toggling a door from the red zone will notify or alert a nearby guard.",
 		BR_REDSAFEALARM = "    RED ZONE: ALARMED SAFES",
@@ -59,6 +62,10 @@ local MOD_STRINGS =
 		ENABLED = "ENABLED",
 		ALARM_NOTIFY = "NOTIFY",
 		ALARM_ALERT = "ALERT",
+		ALARM_NOTIFY_NEXT = "NOTIFY NEXT TURN",
+		ALARM_ALERT_NEXT = "ALERT NEXT TURN",
+		ALARM_NOTIFY_NOW = "NOTIFY IMMEDIATELY",
+		ALARM_ALERT_NOW = "ALERT IMMEDIATELY",
 	},
 
 	DAEMONS =
