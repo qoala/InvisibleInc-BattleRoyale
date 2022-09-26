@@ -76,6 +76,18 @@ local function isPlayerAgent(unit)
 	return unit and unit:isPC() and simquery.isAgent(unit) and unit:getLocation() and not unit:getTraits().takenDrone
 end
 
+local function applyAgentLocator(sim, unit, penalties, hunters, phase)
+	-- No point in locating dead/pinned agents. KOed agents without a chaperone are fair game.
+	if not penalties.locate or penalties.locate ~= phase or unit:isNeutralized() then
+		return
+	end
+	if penalties.locateAlarm == "a" then
+		chase = huntAgent(sim, unit, hunters)
+	elseif penalties.locateAlarm == "n" then
+		chase = chaseAgent(sim, unit, hunters)
+	end
+end
+
 local function royaleFlushApplyPenalties(sim, unit, penalties, hunters)
 	local uiTxt = nil
 	if penalties.mp and penalties.mp > 0 then
@@ -101,10 +113,7 @@ local function royaleFlushApplyPenalties(sim, unit, penalties, hunters)
 		sim:dispatchEvent(simdefs.EV_UNIT_FLOAT_TXT,{txt=uiTxt,x=x,y=y,unit=unit,color=cdefs.COLOR_PLAYER_WARNING})
 	end
 
-	-- No point in locating dead/pinned agents. KOed agents without a chaperone are fair game.
-	if penalties.locate and penalties.locate ~= "end" and not unit:isNeutralized() then
-		huntAgent(sim, unit, hunters)
-	end
+	applyAgentLocator(sim, unit, penalties, hunters, "start")
 end
 
 local function royaleFlushUnitStartTurn(sim, unit, hunters)
@@ -133,8 +142,9 @@ local function royaleFlushUnitEndTurn(sim, unit, hunters)
 	if not isPlayerAgent(unit) then
 		return
 	end
-	local penalties = sim:getParams().difficultyOptions.backstab_redPenalties
-	if penalties.locate ~= "end" then
+	local yellowPenalties = sim:getParams().difficultyOptions.backstab_yellowPenalties
+	local redPenalties = sim:getParams().difficultyOptions.backstab_redPenalties
+	if redPenalties.locate ~= "end" and yellowPenalties.locate ~= "end" then
 	    return
 	end
 
@@ -144,9 +154,9 @@ local function royaleFlushUnitEndTurn(sim, unit, hunters)
 	if not simRoom or not simRoom.backstabState then
 		return
 	elseif simRoom.backstabState == 0 then
-		if penalties.locate == "end" and not unit:isNeutralized() then
-			huntAgent(sim, unit, hunters)
-		end
+		applyAgentLocator(sim, unit, redPenalties, hunters, "end")
+	elseif simRoom.backstabState == 1 then
+		applyAgentLocator(sim, unit, yellowPenalties, hunters, "end")
 	end
 end
 
