@@ -1,4 +1,4 @@
-# Invisible Inc. Battle Royale
+# Invisible Inc. - Encroaching Danger
 ### A mod for "Invisible Inc." by KLEI Entertainment
 
 (Also known as Agent Unground Battleknowns. Credit to jlaub and AndrewKay's stream for that name.)
