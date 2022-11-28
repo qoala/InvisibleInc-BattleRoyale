@@ -27,6 +27,7 @@ ifneq ($(INSTALL_PATH2),)
 endif
 
 out/modinfo.txt: modinfo.txt
+	mkdir -p out
 	cp modinfo.txt out/modinfo.txt
 
 #
