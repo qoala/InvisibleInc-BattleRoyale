@@ -393,13 +393,89 @@ local function updateLegacyParams(difficultyOptions)
 	end
 end
 
+local ICONS =
+{
+	["se"] =             "gui/icons/daemon_icons/backstab_royaleflush_s.png",
+	["se+"] =            "gui/icons/daemon_icons/backstab_royaleflush_s_plus.png",
+	["ce"] =             "gui/icons/daemon_icons/backstab_royaleflush_c.png",
+	["ce+"] =            "gui/icons/daemon_icons/backstab_royaleflush_c_plus.png",
+	["double"] =         "gui/icons/daemon_icons/backstab_royaleflush_d.png",
+	["double+"] =        "gui/icons/daemon_icons/backstab_royaleflush_d_plus.png",
+	["custom-se"] =      "gui/icons/daemon_icons/backstab_royaleflush_s_edit.png",
+	["custom-se+"] =     "gui/icons/daemon_icons/backstab_royaleflush_s_plus_edit.png",
+	["custom-ce"] =      "gui/icons/daemon_icons/backstab_royaleflush_c_edit.png",
+	["custom-ce+"] =     "gui/icons/daemon_icons/backstab_royaleflush_c_plus_edit.png",
+	["custom-double"] =  "gui/icons/daemon_icons/backstab_royaleflush_d_edit.png",
+	["custom-double+"] = "gui/icons/daemon_icons/backstab_royaleflush_d_plus_edit.png",
+	["custom-easy"] =    "gui/icons/daemon_icons/backstab_royaleflush_h_edit.png",
+	["custom-easy+"] =   "gui/icons/daemon_icons/backstab_royaleflush_h_plus_edit.png",
+}
+
+local function pickIcon(params)
+	local icon = ICONS[params.backstab_stab and params.backstab_stab.label]
+	if icon then return icon end
+	local yellowPenalties = params.backstab_yellowPenalties or {}
+	local redPenalties = params.backstab_redPenalties or {}
+	-- Option for extra-hard mode.
+	local isPlus = redPenalties.locate == "end" and redPenalties.locateAlarm == "a"
+
+	-- Options never enabled by a preset.
+	local hasNoCustom = (not yellowPenalties.disarm and not yellowPenalties.locate
+			and not yellowPenalties.attackAlarm)
+
+	-- Options enabled by the standard preset.
+	local hasStandard = (yellowPenalties.doorAlarm and yellowPenalties.safeAlarm
+			and redPenalties.doorAlarm == "a" and redPenalties.safeAlarm == "a"
+			and redPenalties.attackAlarm == "a"
+			and redPenalties.locate and redPenalties.locateAlarm == "a")
+	local hasExactlyStandard = (
+			yellowPenalties.doorAlarm == "n" and yellowPenalties.safeAlarm == "n")
+	-- Options disabled by the standard preset, but enabled by the classic preset.
+	local hasNoClassic = (yellowPenalties.mp == 0
+			and redPenalties.mp == 0 and not redPenalties.disarm)
+
+	-- Options enabled by the classic preset.
+	local hasClassic = (yellowPenalties.mp >= 2 and yellowPenalties.noSprint
+			and redPenalties.mp >= 4 and redPenalties.noSprint
+			and redPenalties.disarm
+			and redPenalties.locate and redPenalties.locateAlarm == "a")
+	local hasExactlyClassic = (
+			yellowPenalties.mp == 2 and redPenalties.mp == 4)
+	-- Options disabled by the classic preset, but enabled by the standard preset.
+	local hasNoStandard = (not yellowPenalties.doorAlarm and not yellowPenalties.safeAlarm
+			and not redPenalties.doorAlarm and not redPenalties.safeAlarm
+			and not redPenalties.attackAlarm)
+
+	if hasStandard and hasClassic then
+		if hasNoCustom and hasExactlyStandard and hasExactlyClassic then
+			return isPlus and ICONS["double+"] or ICONS["double"]
+		else
+			return isPlus and ICONS["custom-double+"] or ICONS["custom-double"]
+		end
+	elseif hasStandard then
+		if hasNoCustom and hasExactlyStandard and hasNoClassic then
+			return isPlus and ICONS["se+"] or ICONS["se"]
+		else
+			return isPlus and ICONS["custom-se+"] or ICONS["custom-se"]
+		end
+	elseif hasClassic then
+		if hasNoCustom and hasExactlyClassic and hasNoStandard then
+			return isPlus and ICONS["ce+"] or ICONS["ce"]
+		else
+			return isPlus and ICONS["custom-ce+"] or ICONS["custom-ce"]
+		end
+	else
+		return isPlus and ICONS["custom-easy+"] or ICONS["custom-easy"]
+	end
+end
+
 -- ===
 
 local npc_abilities =
 {
 	backstab_royaleFlush = util.extend(createDaemon(STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH))
 	{
-		icon = "gui/icons/programs_icons/ProgramAces.png",
+		icon = "gui/icons/daemon_icons/backstab_royaleflush_h_edit.png",
 		standardDaemon = false,
 		reverseDaemon = false,
 		permanent = true,
@@ -412,10 +488,12 @@ local npc_abilities =
 		REVERSE_DAEMONS = false,
 
 		onSpawnAbility = function( self, sim, player )
-			updateLegacyParams(sim:getParams().difficultyOptions)
-			local stabOptions = sim:getParams().difficultyOptions.backstab_stab or {}
-			self._reverseZones = stabOptions.reverseZones
+			local difficultyOptions = sim:getParams().difficultyOptions
+			updateLegacyParams(difficultyOptions)
+			self.icon = pickIcon(difficultyOptions) or self.icon
 
+			local stabOptions = difficultyOptions.backstab_stab or {}
+			self._reverseZones = stabOptions.reverseZones
 			self.turns = sim:backstab_turnsUntilNextZone()
 
 			sim:addTrigger( simdefs.TRG_START_TURN, self )

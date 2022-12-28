@@ -50,12 +50,12 @@ end )
 package:Save( build_options.outputpath, "images.kwad" )
 
 -- GUI
--- local package = Package:new( "gui", MaxPackageSize, options )
--- package:CreateAtlas( TF.BC3, MaxTextureWidth, MaxTextureHeight, AtlasStyle.Increasing ) 
--- PackageFolder( package, "./gui", true, function(srcpath)
--- 	return string.find(srcpath, ".png", -4) ~= nil
--- end )
--- package:Save( build_options.outputpath, "gui.kwad" )
+local package = Package:new( "gui", MaxPackageSize, options )
+package:CreateAtlas( TF.BC3, MaxTextureWidth, MaxTextureHeight, AtlasStyle.Increasing ) 
+PackageFolder( package, "./gui", true, function(srcpath)
+	return string.find(srcpath, ".png", -4) ~= nil
+end )
+package:Save( build_options.outputpath, "gui.kwad" )
 
 -- AUDIO
 -- package = Package:new( "sounds", MaxPackageSize, options )

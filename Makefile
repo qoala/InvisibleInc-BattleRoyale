@@ -10,7 +10,7 @@ include makeconfig.mk
 
 .PHONY: build
 
-build: out/modinfo.txt out/scripts.zip out/images.kwad
+build: out/modinfo.txt out/scripts.zip out/images.kwad out/gui.kwad
 
 install: build
 	mkdir -p $(INSTALL_PATH)
@@ -18,12 +18,14 @@ install: build
 	cp out/modinfo.txt $(INSTALL_PATH)/
 	cp out/scripts.zip $(INSTALL_PATH)/
 	cp out/images.kwad $(INSTALL_PATH)/
+	cp out/gui.kwad $(INSTALL_PATH)/
 ifneq ($(INSTALL_PATH2),)
 	mkdir -p $(INSTALL_PATH2)
 	rm -f $(INSTALL_PATH2)/*.kwad $(INSTALL_PATH2)/*.zip
 	cp out/modinfo.txt $(INSTALL_PATH2)/
 	cp out/scripts.zip $(INSTALL_PATH2)/
 	cp out/images.kwad $(INSTALL_PATH2)/
+	cp out/gui.kwad $(INSTALL_PATH2)/
 endif
 
 out/modinfo.txt: modinfo.txt
@@ -39,9 +41,10 @@ out/modinfo.txt: modinfo.txt
 # $(anims): %.anim: $(wildcard %.anim.d/*.xml $.anim.d/*.png)
 # 	cd $*.anim.d && zip ../$(notdir $@) *.xml *.png
 
+gui := $(wildcard gui/**/*.png)
 images := $(wildcard images/**/*.png)
 
-out/images.kwad: $(images)
+out/images.kwad out/gui.kwad: $(images) $(gui)
 	mkdir -p out
 	$(KWAD_BUILDER) -i build.lua -o out
 

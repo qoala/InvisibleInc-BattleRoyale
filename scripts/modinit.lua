@@ -166,6 +166,7 @@ local function init(modApi)
 	})
 
 	local dataPath = modApi:getDataPath()
+	KLEIResourceMgr.MountPackage(dataPath .. "/gui.kwad", "data")
 	KLEIResourceMgr.MountPackage(dataPath .. "/images.kwad", "data")
 
 	-- client overrides
@@ -213,6 +214,8 @@ local function load(modApi, options, params)
 		params.backstab_redPenalties = redPenalties
 
 		if options["brZonePenalties"] and options["brZonePenalties"].value == "se" then
+			params.backstab_stab.label = "se"
+
 			yellowPenalties.mp = 0
 			yellowPenalties.noSprint = false
 			yellowPenalties.disarm = false
@@ -230,6 +233,8 @@ local function load(modApi, options, params)
 			redPenalties.safeAlarm = "a"
 			redPenalties.attackAlarm = "a"
 		elseif options["brZonePenalties"] and options["brZonePenalties"].value == "se+" then
+			params.backstab_stab.label = "se+"
+
 			yellowPenalties.mp = 0
 			yellowPenalties.noSprint = false
 			yellowPenalties.disarm = false
@@ -247,6 +252,8 @@ local function load(modApi, options, params)
 			redPenalties.safeAlarm = "a"
 			redPenalties.attackAlarm = "a"
 		elseif options["brZonePenalties"] and options["brZonePenalties"].value == "classic" then
+			params.backstab_stab.label = "ce"
+
 			yellowPenalties.mp = 2
 			yellowPenalties.noSprint = true
 			yellowPenalties.disarm = false
