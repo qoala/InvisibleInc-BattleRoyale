@@ -1,5 +1,5 @@
 name = Encroaching Danger
 author = qoalabear
 icon = gui/icons/modicon_backstab.png
-version = 0.14.0
+version = 1.0.0
 workshop = 2446230676
