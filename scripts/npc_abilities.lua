@@ -542,8 +542,9 @@ local npc_abilities =
 					sim:dispatchEvent( simdefs.EV_HUD_REFRESH, {} )
 
 					local nextTurns = sim:backstab_turnsUntilNextZone(0)
-					local txt = nextTurns and util.sformat(self.activedesc, nextTurns) or STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH.FINISHED_DESC
-					sim:dispatchEvent( simdefs.EV_SHOW_DAEMON, { name = self.name, icon=self.icon, txt = txt } )
+					local daemonStrings = STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH
+					local txt = nextTurns and util.sformat(daemonStrings.WARNING, nextTurns) or daemonStrings.FINISHED_WARNING
+					sim:dispatchEvent( simdefs.EV_SHOW_WARNING, { txt=txt, color=cdefs.COLOR_CORP_WARNING, icon=self.icon, sound = "SpySociety/Actions/mainframe_deterrent_action" } )
 					self.turns = nextTurns
 				else
 					self.turns = sim:backstab_turnsUntilNextZone(0)
