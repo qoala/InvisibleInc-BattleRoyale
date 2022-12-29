@@ -544,7 +544,7 @@ local npc_abilities =
 					local nextTurns = sim:backstab_turnsUntilNextZone(0)
 					local daemonStrings = STRINGS.BACKSTAB.DAEMONS.ROYALE_FLUSH
 					local txt = nextTurns and util.sformat(daemonStrings.WARNING, nextTurns) or daemonStrings.FINISHED_WARNING
-					sim:dispatchEvent( simdefs.EV_SHOW_WARNING, { txt=txt, color=cdefs.COLOR_CORP_WARNING, icon=self.icon, sound = "SpySociety/Actions/mainframe_deterrent_action" } )
+					sim:dispatchEvent( simdefs.EV_BACKSTAB_SHOW_WARNING, { txt=txt, color=cdefs.COLOR_CORP_WARNING, icon=self.icon, sound = "SpySociety/HUD/mainframe/firewall_increase" } )
 					self.turns = nextTurns
 				else
 					self.turns = sim:backstab_turnsUntilNextZone(0)

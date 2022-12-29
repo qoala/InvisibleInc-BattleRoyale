@@ -173,10 +173,12 @@ local function init(modApi)
 	include(scriptPath .. "/boardrig")
 	include(scriptPath .. "/cdefs")
 	include(scriptPath .. "/cellrig")
+	include(scriptPath .. "/hud")
 
 	-- sim overrides
 	include(scriptPath .. "/engine")
 	include(scriptPath .. "/procgen")
+	include(scriptPath .. "/simdefs")
 end
 
 local function earlyUnload(modApi)
@@ -301,6 +303,10 @@ local function load(modApi, options, params)
 	for name, ability in pairs(npc_abilities) do
 		modApi:addDaemonAbility( name, ability )
 	end
+
+	modApi:insertUIElements(include( scriptPath .. "/screen_inserts" ))
+	local simdefs = include( "sim/simdefs" )
+	modApi:addVizEvHandler(simdefs.EV_BACKSTAB_SHOW_WARNING, include( scriptPath .. "/viz_show_backstab_warning" ))
 end
 
 return {
