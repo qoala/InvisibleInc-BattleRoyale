@@ -1,6 +1,19 @@
 local cdefs = include( "client_defs" )
 local hud = include( "hud/hud" )
 
+local function findBackstabDaemonIndex( self )
+	local daemons = self._game.simCore:getNPC():getAbilities()
+	if daemons then
+		for i, daemon in ipairs(daemons) do
+			if daemon:getID() == "backstab_royaleFlush" then
+				return i
+			end
+			if i >= 11 then break end -- Go no further than 11 (max rows in Scrolling Daemons mod)
+		end
+	end
+	return 1
+end
+
 local function showBackstabWarning( self, txt, color, programIcon, sound )
 	local warning = self._screen.binder.backstabWarning
 	if warning.isnull then
@@ -11,6 +24,14 @@ local function showBackstabWarning( self, txt, color, programIcon, sound )
 	self._backstab_warningTimer = 3*cdefs.SECONDS
 	if sound then
 		MOAIFmodDesigner.playSound( sound )
+	end
+
+	-- Position the warning next to the Royale Flush daemon.
+	local idx = findBackstabDaemonIndex(self)
+	warning:setPosition(nil, -42 - 60 * (idx - 1))
+	if self._mainframe_panel.daemonHandler and self._mainframe_panel.daemonHandler.scrollItems then
+		-- If Scrolling Daemons mod is present, force scroll to the beginning of the list.
+		self._mainframe_panel.daemonHandler:scrollItems(0)
 	end
 
 	local warningTxt = warning.binder.warningTxtCenter
