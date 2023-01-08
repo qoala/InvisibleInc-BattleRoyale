@@ -155,7 +155,9 @@ function simengine:backstab_advanceZones(turnOffset)
 
         self:dispatchEvent("EV_BACKSTAB_REFRESHOVERLAY", {})
 
-        simlog("LOG_BACKSTAB", "ADVANCE: turn=%s next=%s", turn, tostring(self._backstab_nextZone))
+        simlog(
+                "LOG_BACKSTAB", "ADVANCE: turn=%s next=%s nextTurn=%s", turn,
+                tostring(self._backstab_nextZone), tostring(self._backstab_nextZoneTurn))
         return true
     end
     return false
@@ -163,7 +165,7 @@ end
 
 -- Called for events that push back the Royale Flush zone advancement
 function simengine:backstab_reverse(cycleCount)
-    if self._backstab_nextZone <= self._backstab_maxZone then
+    if not self._backstab_nextZone or self._backstab_nextZone <= self._backstab_maxZone then
         local difficultyOptions = self:getParams().difficultyOptions
         local turnsPerCycle = difficultyOptions.backstab_turnsPerCycle
         self._backstab_startTurn = self._backstab_startTurn + cycleCount * turnsPerCycle
@@ -173,10 +175,15 @@ function simengine:backstab_reverse(cycleCount)
 
         local turn = math.ceil((self:getTurnCount() + 1) / 2)
 
-        self._backstab_startTurn = turn - (self._backstab_maxZone - 1) * turnsPerCycle
+        self._backstab_startTurn = turn - (self._backstab_maxZone - cycleCount) * turnsPerCycle
     end
 
+    simlog("LOG_BACKSTAB", "REVERSE: newStartTurn=%s", tostring(self._backstab_startTurn))
+    self._backstab_nextZone = -100 -- Force a re-calc.
     self:backstab_advanceZones()
+    simlog(
+            "LOG_BACKSTAB", "REVERSE-PST: next=%s nextTurn=%s", tostring(self._backstab_nextZone),
+            tostring(self._backstab_nextZoneTurn))
 end
 
 function simengine:backstab_isBackstabComplete()
