@@ -7,29 +7,39 @@
 #
 
 include makeconfig.mk
+.SECONDEXPANSION:
 
-.PHONY: build
+.PHONY: build install clean distclean
 
-build: out/modinfo.txt out/scripts.zip out/images.kwad out/gui.kwad
+ensuredir = @mkdir -p $(@D)
 
-install: build
-	mkdir -p $(INSTALL_PATH)
-	rm -f $(INSTALL_PATH)/*.kwad $(INSTALL_PATH)/*.zip
-	cp out/modinfo.txt $(INSTALL_PATH)/
-	cp out/scripts.zip $(INSTALL_PATH)/
-	cp out/images.kwad $(INSTALL_PATH)/
-	cp out/gui.kwad $(INSTALL_PATH)/
+files := modinfo.txt scripts.zip gui.kwad images.kwad
+outfiles := $(addprefix out/, $(files))
+installfiles := $(addprefix $(INSTALL_PATH)/, $(files))
+
 ifneq ($(INSTALL_PATH2),)
-	mkdir -p $(INSTALL_PATH2)
-	rm -f $(INSTALL_PATH2)/*.kwad $(INSTALL_PATH2)/*.zip
-	cp out/modinfo.txt $(INSTALL_PATH2)/
-	cp out/scripts.zip $(INSTALL_PATH2)/
-	cp out/images.kwad $(INSTALL_PATH2)/
-	cp out/gui.kwad $(INSTALL_PATH2)/
+	installfiles += $(addprefix $(INSTALL_PATH2)/, $(files))
 endif
 
+build: $(outfiles)
+install: build $(installfiles)
+
+$(installfiles): %: out/$$(@F)
+	$(ensuredir)
+	cp $< $@
+
+clean:
+	rm out/*
+
+distclean:
+	rm -f $(INSTALL_PATH)/*.kwad $(INSTALL_PATH)/*.zip
+ifneq ($(INSTALL_PATH2),)
+	rm -f $(INSTALL_PATH2)/*.kwad $(INSTALL_PATH2)/*.zip
+endif
+
+
 out/modinfo.txt: modinfo.txt
-	mkdir -p out
+	$(ensuredir)
 	cp modinfo.txt out/modinfo.txt
 
 #
@@ -45,7 +55,7 @@ gui := $(wildcard gui/**/*.png)
 images := $(wildcard images/**/*.png)
 
 out/images.kwad out/gui.kwad: $(images) $(gui)
-	mkdir -p out
+	$(ensuredir)
 	$(KWAD_BUILDER) -i build.lua -o out
 
 #
@@ -53,5 +63,5 @@ out/images.kwad out/gui.kwad: $(images) $(gui)
 #
 
 out/scripts.zip: $(shell find scripts -type f -name "*.lua")
-	mkdir -p out
+	$(ensuredir)
 	cd scripts && zip -r ../$@ . -i '*.lua'
