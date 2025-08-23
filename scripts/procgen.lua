@@ -3,7 +3,7 @@ local util = include("modules/util")
 local procgen = include("sim/procgen")
 
 -- Modified mazegen:breadthFirstSearch(). Changes at -- BACKSTAB
-local function breadthFirstSearch(cxt, searchRoom, fn)
+function procgen.backstab_breadthFirstSearch(cxt, searchRoom, fn)
     local rooms = {searchRoom}
     searchRoom.depth = 0
 
@@ -30,7 +30,7 @@ local function breadthFirstSearch(cxt, searchRoom, fn)
     end
 end
 
-function analyzeExitDistance(cxt)
+function procgen.backstab_analyzeExitDistance(cxt)
     -- Discover depths from the entrance room to all the other rooms.
     local originRoom = array.findIf(
             cxt.rooms, function(r)
@@ -42,7 +42,7 @@ function analyzeExitDistance(cxt)
         return
     end
 
-    breadthFirstSearch(
+    procgen.backstab_breadthFirstSearch(
             cxt, originRoom, function(room)
                 room.backstab_exitDistance = (room.depth or 0)
             end)
@@ -55,7 +55,7 @@ function procgen.generateLevel(params)
 
     if params.difficultyOptions.backstab_enabled then
         local cxt = {rooms = result.rooms}
-        analyzeExitDistance(cxt)
+        procgen.backstab_analyzeExitDistance(cxt)
     end
 
     return result

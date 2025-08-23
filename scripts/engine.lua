@@ -6,7 +6,7 @@ local simquery = include("sim/simquery")
 local oldInit = simengine.init
 
 -- Sort by reverse distance from exit
-function compareRooms(a, b)
+local function compareRooms(a, b)
     if a.backstab_exitDistance ~= b.backstab_exitDistance then
         return a.backstab_exitDistance > b.backstab_exitDistance
     end
@@ -106,7 +106,7 @@ function simengine:backstab_turnsUntilNextZone(turnOffset)
     return nil
 end
 
-function updateRooms(sim, zone)
+local function updateRooms(sim, zone)
     for _, simRoom in ipairs(sim._mutableRooms) do
         if simRoom.backstabAlwaysRed then
             -- RED

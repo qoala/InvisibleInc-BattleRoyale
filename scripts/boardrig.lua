@@ -2,7 +2,7 @@ local util = include("modules/util")
 local cdefs = include("client_defs")
 local boardrig = include("gameplay/boardrig")
 
-function createBackstabGridAnim(params)
+local function createBackstabGridAnim(params)
     local animRootCount = util.tcount(params.animRoots)
     local animLengths = {}
     for name, anim in pairs(params.anims) do
@@ -29,7 +29,7 @@ end
 
 -- Variation on vanilla createGridProp that renders floor tiles.
 -- The overlay grid has a 2x2 of tiles for every floor tile.
-function createBackstabGridProp(game, simCore, params)
+local function createBackstabGridProp(game, simCore, params)
     local boardWidth, boardHeight = simCore:getBoardSize()
 
     local grid = MOAIGrid.new()
